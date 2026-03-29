@@ -71,59 +71,56 @@ export function ArticlePage() {
   }, [load]);
 
   return (
-    <div className="relative min-h-screen bg-[length:24px_24px] bg-grid-light dark:bg-grid-dark">
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-accent/5 via-transparent to-transparent dark:from-accent/10" />
-      <main className="relative mx-auto max-w-3xl px-4 pb-20 pt-20 md:px-8 md:pb-28 md:pt-24">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 text-sm text-muted transition hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
-        >
-          <FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" />
-          返回首页
-        </Link>
+    <>
+      <Link
+        to="/"
+        className="inline-flex items-center gap-2 text-sm text-muted transition hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+      >
+        <FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" />
+        返回文章列表
+      </Link>
 
-        <div className="mt-10 rounded-3xl border border-border bg-surface-elevated/50 p-6 backdrop-blur-md md:p-10">
-          {loading && <ArticleSkeleton />}
-          {!loading && error && (
-            <div
-              className="rounded-2xl border border-red-500/30 bg-red-500/5 p-8 text-center"
-              role="alert"
+      <div className="mx-auto mt-8 max-w-3xl rounded-3xl border border-border bg-surface-elevated/50 p-6 backdrop-blur-md md:mt-10 md:p-10">
+        {loading && <ArticleSkeleton />}
+        {!loading && error && (
+          <div
+            className="rounded-2xl border border-red-500/30 bg-red-500/5 p-8 text-center"
+            role="alert"
+          >
+            <p className="text-sm text-red-200 dark:text-red-300">{error}</p>
+            <button
+              type="button"
+              onClick={() => void load()}
+              className="mt-4 rounded-full border border-border px-5 py-2 text-sm transition hover:border-accent/50 hover:text-accent"
             >
-              <p className="text-sm text-red-200 dark:text-red-300">{error}</p>
-              <button
-                type="button"
-                onClick={() => void load()}
-                className="mt-4 rounded-full border border-border px-5 py-2 text-sm transition hover:border-accent/50 hover:text-accent"
-              >
-                重试
-              </button>
+              重试
+            </button>
+          </div>
+        )}
+        {!loading && !error && article && (
+          <motion.article
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <p className="text-xs font-medium text-accent">
+              {getCategoryLabel(article.categoryId)}
+            </p>
+            <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 md:text-4xl">
+              {article.title}
+            </h1>
+            <time
+              dateTime={article.publishedAt}
+              className="mt-4 block text-sm text-muted"
+            >
+              {article.publishedAt}
+            </time>
+            <div className="mt-10 border-t border-border pt-10">
+              <ArticleBody text={article.body} />
             </div>
-          )}
-          {!loading && !error && article && (
-            <motion.article
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <p className="text-xs font-medium text-accent">
-                {getCategoryLabel(article.categoryId)}
-              </p>
-              <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 md:text-4xl">
-                {article.title}
-              </h1>
-              <time
-                dateTime={article.publishedAt}
-                className="mt-4 block text-sm text-muted"
-              >
-                {article.publishedAt}
-              </time>
-              <div className="mt-10 border-t border-border pt-10">
-                <ArticleBody text={article.body} />
-              </div>
-            </motion.article>
-          )}
-        </div>
-      </main>
-    </div>
+          </motion.article>
+        )}
+      </div>
+    </>
   );
 }
