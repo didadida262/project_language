@@ -6,9 +6,9 @@ import { groupSummariesByCategory } from '../content/loadArticles';
 import type { ArticleSummary } from '../types/api';
 import { Skeleton } from './ui/Skeleton';
 
-function CategoryBadge({ label }: { label: string }) {
+function CategoryTag({ label }: { label: string }) {
   return (
-    <span className="inline-flex shrink-0 items-center rounded-full border border-accent/25 bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent">
+    <span className="inline-flex shrink-0 items-center rounded-md border border-border bg-surface-elevated/80 px-2 py-0.5 text-[11px] font-medium text-muted ring-1 ring-inset ring-white/5 dark:ring-white/10">
       {label}
     </span>
   );
@@ -26,13 +26,16 @@ function ListSkeleton() {
                 key={i}
                 className="rounded-2xl border border-border bg-surface-elevated/40 p-5"
               >
-                <div className="flex gap-2">
-                  <Skeleton className="h-5 w-16 rounded-full" />
+                <div className="flex items-start justify-between gap-3">
                   <Skeleton className="h-5 flex-1 max-w-md" />
+                  <Skeleton className="mt-0.5 h-4 w-4 shrink-0 rounded" />
                 </div>
                 <Skeleton className="mt-3 h-3 w-full" />
                 <Skeleton className="mt-2 h-3 w-[92%]" />
-                <Skeleton className="mt-4 h-3 w-24" />
+                <div className="mt-4 flex items-center gap-2">
+                  <Skeleton className="h-5 w-14 rounded-md" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
               </li>
             ))}
           </ul>
@@ -111,13 +114,10 @@ export function ArticleList(props: {
                   to={`/articles/${article.id}`}
                   className="group block rounded-2xl border border-border bg-surface-elevated/35 p-5 transition hover:border-accent/35 hover:bg-surface-elevated/55 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
-                      <CategoryBadge label={group.label} />
-                      <h2 className="font-display text-lg font-semibold tracking-tight text-zinc-900 group-hover:text-accent dark:text-zinc-50">
-                        {article.title}
-                      </h2>
-                    </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <h2 className="min-w-0 flex-1 font-display text-lg font-semibold tracking-tight text-zinc-900 group-hover:text-accent dark:text-zinc-50">
+                      {article.title}
+                    </h2>
                     <FontAwesomeIcon
                       icon={faChevronRight}
                       className="mt-1 h-4 w-4 shrink-0 text-muted transition group-hover:translate-x-0.5 group-hover:text-accent"
@@ -126,12 +126,15 @@ export function ArticleList(props: {
                   <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted">
                     {article.excerpt}
                   </p>
-                  <time
-                    dateTime={article.publishedAt}
-                    className="mt-4 block text-xs text-zinc-500 dark:text-zinc-500"
-                  >
-                    {article.publishedAt}
-                  </time>
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <CategoryTag label={group.label} />
+                    <time
+                      dateTime={article.publishedAt}
+                      className="text-xs tabular-nums text-zinc-500 dark:text-zinc-500"
+                    >
+                      {article.publishedAt}
+                    </time>
+                  </div>
                 </Link>
               </motion.li>
             ))}
