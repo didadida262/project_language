@@ -1,6 +1,18 @@
 [
-  { "id": "grammar", "label": "语法" },
-  { "id": "lexicon", "label": "词汇" },
-  { "id": "method", "label": "方法与实践" },
-  { "id": "notes", "label": "随笔" }
+  {
+    "id": "grammar",
+    "label": "语法"
+  },
+  {
+    "id": "lexicon",
+    "label": "词汇"
+  },
+  {
+    "id": "method",
+    "label": "方法与实践"
+  },
+  {
+    "id": "notes",
+    "label": "随笔"
+  }
 ]

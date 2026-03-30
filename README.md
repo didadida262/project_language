@@ -30,7 +30,7 @@ npm run new -- --help
 
 说明：npm 执行项目脚本需写 **`npm run new`**，中间用 **`--`** 把后面的参数原样传给脚本；不能写成 `npm new`（会与 npm 其它行为冲突）。
 
-类别表在 `src/content/article-categories.json` 中维护；脚本会按 **中文名称** 或 **id** 匹配类别。
+类别表在 `src/content/article-categories.json` 中维护；脚本会按 **中文名称** 或 **id** 匹配已有类别；**若没有匹配项，会自动追加新类别**（展示名即你输入的字符串，id 由脚本从字母数字与 `_-` 生成，否则为 `cat_` + 随机段）再生成文章。
 
 > 提示：Vite 对 `import.meta.glob` 在开发时可能缓存文件列表，**新增 JSON 后若列表未刷新，重启 `npm run dev`。**
 
