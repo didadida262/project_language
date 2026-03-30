@@ -39,6 +39,7 @@ export function HomePage() {
         loading={articlesLoading}
         error={articlesError}
         onRetry={loadArticles}
+        grouped={false}
       />
     </>
   );
