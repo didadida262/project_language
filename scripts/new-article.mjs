@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 在 src/content/articles/ 下生成一篇 JSON 文章文件。
+ * 在 src/content/articles/ 下生成一篇 Markdown 文章文件。
  * 用法:
  *   npm run new -- "文章标题" "类别名或 categoryId"
  * 类别可为已有 id / 中文 label；若不存在则自动写入 article-categories.json 并创建该类别。
@@ -176,29 +176,33 @@ if (resolved) {
 mkdirSync(articlesDir, { recursive: true });
 const id = randomUUID();
 const fileBase = `${todayISO()}-${slugify(title)}`;
-let finalPath = join(articlesDir, `${fileBase}.json`);
+let finalPath = join(articlesDir, `${fileBase}.md`);
 let n = 0;
 while (existsSync(finalPath)) {
   n += 1;
-  finalPath = join(articlesDir, `${fileBase}-${n}.json`);
+  finalPath = join(articlesDir, `${fileBase}-${n}.md`);
 }
 
-const article = {
-  id,
-  categoryId,
-  title,
-  excerpt: '在此填写摘要……',
-  publishedAt: todayISO(),
-  body: '正文可以使用 **粗体**，段落之间空一行。\n\n第二段。',
-};
+const article = `---
+id: ${id}
+categoryId: ${categoryId}
+title: ${title}
+excerpt: 在此填写摘要……
+publishedAt: ${todayISO()}
+---
 
-writeFileSync(finalPath, `${JSON.stringify(article, null, 2)}\n`, 'utf8');
+正文可以使用 **粗体**，段落之间空一行。
+
+第二段。
+`;
+
+writeFileSync(finalPath, article, 'utf8');
 console.log('已生成:', finalPath);
 const catMeta = categories.find((c) => c.id === categoryId);
 console.log(`类别: ${categoryId}（${catMeta?.label ?? ''}）`);
 if (createdCategory) {
   console.log(
-    '提示: 已修改类别配置，请重启 dev；新增文章 JSON 后若列表未更新也请重启。',
+    '提示: 已修改类别配置，请重启 dev；新增文章 Markdown 后若列表未更新也请重启。',
   );
 } else {
   console.log(
