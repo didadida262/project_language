@@ -20,13 +20,17 @@ npm run dev
 在 `src/content/articles/` 下生成一篇 JSON（含唯一 `id` 与必填 `categoryId`）：
 
 ```bash
-npm run article:new -- "文章标题" grammar
-# 或
-npm run article:new -- --title "文章标题" --category lexicon
-npm run article:new -- --help   # 查看可用 categoryId
+npm run new -- "文章标题" "语法"
+# 与上等价（仍可用）
+npm run article:new -- "文章标题" "方法与实践"
+# 第二个参数也支持英文 id，例如 grammar、notes
+npm run new -- --title "文章标题" --category lexicon
+npm run new -- --help
 ```
 
-类别表在 `src/content/article-categories.json` 中维护；新增类别后脚本与前端会一并识别。
+说明：npm 执行项目脚本需写 **`npm run new`**，中间用 **`--`** 把后面的参数原样传给脚本；不能写成 `npm new`（会与 npm 其它行为冲突）。
+
+类别表在 `src/content/article-categories.json` 中维护；脚本会按 **中文名称** 或 **id** 匹配类别。
 
 > 提示：Vite 对 `import.meta.glob` 在开发时可能缓存文件列表，**新增 JSON 后若列表未刷新，重启 `npm run dev`。**
 

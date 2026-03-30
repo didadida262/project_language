@@ -8,6 +8,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "openapi:sync": "node scripts/openapi-sync.mjs",
+    "new": "node scripts/new-article.mjs",
     "article:new": "node scripts/new-article.mjs"
   },
   "dependencies": {
