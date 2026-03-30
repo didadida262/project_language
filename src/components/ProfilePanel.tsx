@@ -93,7 +93,8 @@ export function ProfilePanel(props: {
             {profile.name}
           </h1>
           <p className="mt-1 text-sm text-muted">{profile.title}</p>
-          <div className="mt-3 flex justify-center md:justify-start">
+          <div className="mt-3 flex flex-wrap items-baseline justify-center gap-x-4 gap-y-2 md:justify-start">
+            <CategoriesTextLink to="/">Home</CategoriesTextLink>
             <CategoriesTextLink to="/categories">Categories</CategoriesTextLink>
           </div>
         </div>
