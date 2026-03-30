@@ -16,7 +16,7 @@ npm run new -- "文章标题" "语法"
 npm run new -- --help
 ```
 
-类别与说明见下文「目录说明」。新增 `src/content/articles/*.json` 后若列表未更新，**重启 dev**。
+类别与说明见下文「目录说明」。新增 `src/content/articles/*.md` 后若列表未更新，**重启 dev**。
 
 ## 构建与部署
 
@@ -38,7 +38,7 @@ APIFOX_OPENAPI_URL="https://your-openapi.json" npm run openapi:sync
 ## 目录说明
 
 - `src/mocks/data.ts` — 个人资料 `mockProfile`
-- `src/content/articles/*.json` — 文章正文（由 `loadArticles` 聚合）
+- `src/content/articles/*.md` — 文章正文（由 `loadArticles` 聚合，兼容旧 `.json`）
 - `src/content/article-categories.json` — 类别定义
 - `src/theme/` — 主题与 `ThemeProvider`
 - `src/pages/`、`src/components/` — 页面与组件

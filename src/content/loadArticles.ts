@@ -5,10 +5,46 @@ import {
   getCategorySortIndex,
 } from './categories';
 
-const modules = import.meta.glob<{ default: ArticleDetail }>(
+const jsonModules = import.meta.glob<{ default: ArticleDetail }>(
   './articles/*.json',
   { eager: true },
 );
+const mdModules = import.meta.glob<string>('./articles/*.md', {
+  eager: true,
+  query: '?raw',
+  import: 'default',
+});
+
+function parseFrontMatter(raw: string): Record<string, string> {
+  const lines = raw.split(/\r?\n/);
+  if (lines[0]?.trim() !== '---') return {};
+  const out: Record<string, string> = {};
+  for (let i = 1; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (line.trim() === '---') break;
+    const idx = line.indexOf(':');
+    if (idx <= 0) continue;
+    const key = line.slice(0, idx).trim();
+    const value = line.slice(idx + 1).trim();
+    out[key] = value;
+  }
+  return out;
+}
+
+function parseMarkdownArticle(raw: string): ArticleDetail {
+  const fm = parseFrontMatter(raw);
+  const body = raw
+    .replace(/^---[\s\S]*?---\s*\n?/, '')
+    .trim();
+  return {
+    id: fm.id ?? '',
+    categoryId: fm.categoryId ?? 'notes',
+    title: fm.title ?? '',
+    excerpt: fm.excerpt ?? '',
+    publishedAt: fm.publishedAt ?? '',
+    body,
+  };
+}
 
 function normalize(detail: ArticleDetail): ArticleDetail {
   if (!detail.categoryId?.trim()) {
@@ -19,7 +55,11 @@ function normalize(detail: ArticleDetail): ArticleDetail {
 }
 
 export function getAllArticleDetails(): ArticleDetail[] {
-  const list = Object.values(modules).map((m) => normalize(m.default));
+  const jsonList = Object.values(jsonModules).map((m) => normalize(m.default));
+  const mdList = Object.values(mdModules).map((raw) =>
+    normalize(parseMarkdownArticle(raw)),
+  );
+  const list = [...jsonList, ...mdList];
   return list.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
 }
 
