@@ -3,7 +3,7 @@
  * 在 src/content/articles/ 下生成一篇 JSON 文章文件。
  * 用法:
  *   npm run new -- "文章标题" "类别名或 categoryId"
- * 类别可为 article-categories.json 中的 id（如 grammar）或 label（如 语法）。
+ * 类别可为已有 id / 中文 label；若不存在则自动写入 article-categories.json 并创建该类别。
  */
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -18,6 +18,39 @@ const articlesDir = join(root, 'src/content/articles');
 function loadCategories() {
   const raw = readFileSync(categoriesPath, 'utf8');
   return JSON.parse(raw);
+}
+
+function saveCategories(categories) {
+  writeFileSync(
+    categoriesPath,
+    `${JSON.stringify(categories, null, 2)}\n`,
+    'utf8',
+  );
+}
+
+/**
+ * 从未知类别字符串生成唯一 id（仅 [a-z0-9_-]；纯中文等会生成 cat_xxxxxxxx）。
+ * @param {string} raw
+ * @param {{ id: string, label: string }[]} categories
+ */
+function allocateNewCategoryId(raw, categories) {
+  const trimmed = raw.trim();
+  let base = trimmed
+    .toLowerCase()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-z0-9_-]/g, '')
+    .replace(/_+/g, '_')
+    .replace(/^-+|-+$/g, '');
+  if (!base) {
+    base = `cat_${randomUUID().slice(0, 8)}`;
+  }
+  let id = base;
+  let n = 0;
+  while (categories.some((c) => c.id === id)) {
+    n += 1;
+    id = `${base}_${n}`;
+  }
+  return id;
 }
 
 /**
@@ -105,7 +138,8 @@ if (parsed.help) {
   npm run article:new -- "文章标题" "语法"
 
 说明: npm 自定义命令需加 run，中间用 -- 把参数交给脚本。
-  第二个参数可以是类别的中文名称（如 语法、方法与实践）或 id（如 grammar）。
+  第二个参数可以是已有类别的中文名称或 id；若没有匹配项，会自动在
+  src/content/article-categories.json 中新增该类别后再写文章。
 
 仍支持:
   npm run new -- --title "标题" --category grammar
@@ -118,18 +152,26 @@ if (parsed.help) {
 }
 
 const { title, categoryInput } = parsed;
+let categoryId;
+let createdCategory = false;
+
 const resolved = resolveCategory(categoryInput, categories);
-
-if (!resolved) {
-  console.error(`无法识别类别: "${categoryInput}"`);
-  console.error('请使用下列名称或 id 之一:');
-  for (const c of categories) {
-    console.error(`  · ${c.label}  /  ${c.id}`);
+if (resolved) {
+  categoryId = resolved.categoryId;
+} else {
+  const trimmed = categoryInput.trim();
+  if (!trimmed) {
+    console.error('类别不能为空。');
+    process.exit(1);
   }
-  process.exit(1);
+  categoryId = allocateNewCategoryId(trimmed, categories);
+  categories.push({ id: categoryId, label: trimmed });
+  saveCategories(categories);
+  createdCategory = true;
+  console.log(
+    `已新建类别并写入 article-categories.json: ${trimmed} → id「${categoryId}」`,
+  );
 }
-
-const { categoryId } = resolved;
 
 mkdirSync(articlesDir, { recursive: true });
 const id = randomUUID();
@@ -152,7 +194,14 @@ const article = {
 
 writeFileSync(finalPath, `${JSON.stringify(article, null, 2)}\n`, 'utf8');
 console.log('已生成:', finalPath);
-console.log(`类别: ${categoryId}（${categories.find((c) => c.id === categoryId)?.label ?? ''}）`);
-console.log(
-  '提示: Vite 会缓存 glob，新增文件后若列表未更新，请重启 dev 服务器。',
-);
+const catMeta = categories.find((c) => c.id === categoryId);
+console.log(`类别: ${categoryId}（${catMeta?.label ?? ''}）`);
+if (createdCategory) {
+  console.log(
+    '提示: 已修改类别配置，请重启 dev；新增文章 JSON 后若列表未更新也请重启。',
+  );
+} else {
+  console.log(
+    '提示: Vite 会缓存 glob，新增文件后若列表未更新，请重启 dev 服务器。',
+  );
+}
