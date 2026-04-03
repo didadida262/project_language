@@ -178,20 +178,20 @@ function UnitCard({
           className={cn(
             'group relative flex w-full flex-col items-center justify-center gap-2 rounded-xl border px-3 py-4 text-center md:py-4',
             CARD_MIN_H,
-            'cursor-not-allowed border-white/10 bg-zinc-900/82 opacity-95',
+            'cursor-not-allowed border border-zinc-600/45 bg-gradient-to-b from-zinc-800/95 to-zinc-900/98 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]',
           )}
         >
           <span className="flex h-5 w-5 items-center justify-center">
             <FontAwesomeIcon
               icon={faLock}
-              className="h-5 w-5 text-zinc-600"
+              className="h-5 w-5 text-zinc-500"
               title="未解锁"
             />
           </span>
-          <span className="font-display text-sm font-medium text-zinc-600">
+          <span className="font-display text-sm font-medium text-zinc-400">
             {unit.label}
           </span>
-          <span className="flex h-4 items-center justify-center text-[10px] font-medium uppercase tracking-wider text-zinc-700">
+          <span className="flex h-4 items-center justify-center text-[10px] font-medium uppercase tracking-wider text-zinc-500">
             锁定
           </span>
         </button>
