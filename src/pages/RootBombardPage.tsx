@@ -47,12 +47,17 @@ const TRANSLATIONS = {
   },
 } as const;
 
-export function RootBombardPage() {
+interface RootBombardPageProps {
+  onStartBombard: (unitId: number) => void;
+}
+
+export function RootBombardPage({ onStartBombard }: RootBombardPageProps) {
   const [lang, setLang] = useState<'zh' | 'en'>('en');
   const t = TRANSLATIONS[lang];
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [, setTransitionPhase] = useState<'idle' | 'disappearing' | 'moving' | 'whiteout'>('idle');
   const gridRef = useRef<HTMLUListElement>(null);
   const [cellMetrics, setCellMetrics] = useState<{ w: number; h: number } | null>(
     null,
@@ -73,10 +78,22 @@ export function RootBombardPage() {
   }, []);
 
   const handleStart = useCallback(() => {
-    if (!canStart) return;
-    setToast(t.toast);
-    window.setTimeout(() => setToast(null), 3200);
-  }, [canStart, t.toast]);
+    if (!canStart || isTransitioning) return;
+    setIsTransitioning(true);
+    setTransitionPhase('disappearing');
+
+    setTimeout(() => {
+      setTransitionPhase('moving');
+    }, 800);
+
+    setTimeout(() => {
+      setTransitionPhase('whiteout');
+    }, 1800);
+
+    setTimeout(() => {
+      onStartBombard(selectedId!);
+    }, 3000);
+  }, [canStart, isTransitioning, onStartBombard, selectedId]);
 
   return (
     <div className="relative flex h-screen min-h-0 flex-col bg-zinc-950 text-zinc-100">
@@ -112,8 +129,9 @@ export function RootBombardPage() {
                 unit={unit}
                 translations={t}
                 selected={selectedId === unit.id}
+                isTransitioning={isTransitioning}
                 onSelect={() => {
-                  if (!unit.locked) {
+                  if (!unit.locked && !isTransitioning) {
                     setSelectedId((prev) => (prev === unit.id ? null : unit.id));
                   }
                 }}
@@ -140,21 +158,6 @@ export function RootBombardPage() {
           </motion.button>
         </footer>
       </main>
-
-      <AnimatePresence>
-        {toast ? (
-          <motion.div
-            key={toast}
-            role="status"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            className="fixed bottom-28 left-1/2 z-50 max-w-md -translate-x-1/2 rounded-lg border border-white/10 bg-zinc-900/95 px-4 py-3 text-center text-sm text-zinc-200 shadow-xl backdrop-blur"
-          >
-            {toast}
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
     </div>
   );
 }
@@ -169,6 +172,7 @@ function UnitCard({
   unit,
   translations,
   selected,
+  isTransitioning,
   onSelect,
 }: {
   index: number;
@@ -177,6 +181,7 @@ function UnitCard({
   unit: RootUnit;
   translations: (typeof TRANSLATIONS)['zh' | 'en'];
   selected: boolean;
+  isTransitioning: boolean;
   onSelect: () => void;
 }) {
   const locked = unit.locked;
@@ -344,7 +349,7 @@ function UnitCard({
           </div>
           <motion.span
             className="relative z-10 flex h-5 w-5 items-center justify-center will-change-transform"
-            whileHover={{ rotate: [0, -8, 8, 0], scale: 1.08 }}
+            whileHover={!isTransitioning ? { rotate: [0, -8, 8, 0], scale: 1.08 } : undefined}
             transition={{ type: 'spring', stiffness: 400, damping: 18 }}
           >
             <FontAwesomeIcon
