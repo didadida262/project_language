@@ -5,6 +5,12 @@
 @layer base {
   html {
     @apply antialiased;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  html::-webkit-scrollbar {
+    display: none;
   }
 
   html.dark {
