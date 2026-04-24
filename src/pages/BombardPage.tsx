@@ -433,9 +433,10 @@ const FlipCard = React.memo(({
           {/* 纹理底 - 性能优化：简化 */}
           {!reduceMotion && <div className={`absolute inset-0 ${BACK_CLASSES.pattern}`} aria-hidden />}
 
-          {/* 中心光环装饰 - 性能优化：仅在 highlighted 时显示 */}
-          {highlighted && !reduceMotion && (
+          {/* 中心光环装饰 - 所有卡牌都显示 */}
+          {!reduceMotion && (
             <div className="relative" aria-hidden>
+              {/* 外圈光环 */}
               <div className="absolute -inset-10 rounded-full border border-cyan-500/10 animate-pulse" />
               <div className="absolute -inset-8 rounded-full border border-cyan-500/15" />
               <div className="absolute -inset-6 rounded-full border border-cyan-500/20 animate-glow" />
