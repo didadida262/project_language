@@ -1,15 +1,12 @@
 import { faCircleCheck, faGlobe, faLock, faSpinner, faWandMagicSparkles } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState, useEffect } from 'react';
 import { AmbientBackdrop } from '../components/AmbientBackdrop';
-import { ROOT_UNITS } from '../data/rootUnits.ts';
+import { getAvailableRootUnits, type RootUnit } from '../data/rootUnits';
 import { cn } from '../lib/cn';
-import type { RootUnit } from '../types/rootUnit';
 
 const GRID_COLS = 4;
-const UNIT_COUNT = ROOT_UNITS.length;
-const GRID_ROWS = Math.ceil(UNIT_COUNT / GRID_COLS);
 
 // 传递 unitId 给 BombardPage
 interface RootBombardPageProps {
@@ -22,11 +19,13 @@ const FALLBACK_CELL = { w: 156, h: 134 };
 function spreadOffset(
   index: number,
   cell: { w: number; h: number },
+  gridCols: number,
+  gridRows: number
 ): { x: number; y: number } {
-  const col = index % GRID_COLS;
-  const row = Math.floor(index / GRID_COLS);
-  const cx = (GRID_COLS - 1) / 2;
-  const cy = (GRID_ROWS - 1) / 2;
+  const col = index % gridCols;
+  const row = Math.floor(index / gridCols);
+  const cx = (gridCols - 1) / 2;
+  const cy = (gridRows - 1) / 2;
   return {
     x: (cx - col) * cell.w,
     y: (cy - row) * cell.h,
@@ -68,8 +67,20 @@ export function RootBombardPage({ onStartBombard }: RootBombardPageProps) {
     null,
   );
   const reduceMotion = useReducedMotion();
+  
+  // 动态加载可用单元
+  const [availableUnits, setAvailableUnits] = useState<RootUnit[]>([]);
 
-  const canStart = selectedId === 1;
+  useEffect(() => {
+    getAvailableRootUnits().then(units => {
+      setAvailableUnits(units);
+    });
+  }, []);
+
+  const unitCount = availableUnits.length;
+  const gridRows = Math.ceil(unitCount / GRID_COLS);
+  
+  const canStart = selectedId !== null && !availableUnits.find(u => u.id === selectedId)?.locked;
 
   useLayoutEffect(() => {
     const ul = gridRef.current;
@@ -80,10 +91,10 @@ export function RootBombardPage({ onStartBombard }: RootBombardPageProps) {
     const style = getComputedStyle(ul);
     const gap = parseFloat(style.rowGap || style.gap || '12') || 12;
     setCellMetrics({ w: r.width + gap, h: r.height + gap });
-  }, []);
+  }, [availableUnits]);
 
   const handleStart = useCallback(() => {
-    if (!canStart || isTransitioning) return;
+    if (!canStart || isTransitioning || !selectedId) return;
     setIsTransitioning(true);
     setTransitionPhase('disappearing');
 
@@ -96,7 +107,7 @@ export function RootBombardPage({ onStartBombard }: RootBombardPageProps) {
     }, 1800);
 
     setTimeout(() => {
-      onStartBombard(selectedId!);
+      onStartBombard(selectedId);
     }, 3000);
   }, [canStart, isTransitioning, onStartBombard, selectedId]);
 
@@ -128,11 +139,13 @@ export function RootBombardPage({ onStartBombard }: RootBombardPageProps) {
               transitionPhase === 'whiteout' && 'pointer-events-none'
             )}
           >
-            {ROOT_UNITS.map((unit: RootUnit, index: number) => (
+            {availableUnits.map((unit: RootUnit, index: number) => (
               <UnitCard
                 key={unit.id}
                 index={index}
                 cell={cellMetrics ?? FALLBACK_CELL}
+                gridCols={GRID_COLS}
+                gridRows={gridRows}
                 reduceMotion={!!reduceMotion}
                 unit={unit}
                 translations={t}
@@ -201,7 +214,7 @@ export function RootBombardPage({ onStartBombard }: RootBombardPageProps) {
           >
             {selectedId !== null && (
               <SelectedCardCenter
-                unit={ROOT_UNITS.find((u: RootUnit) => u.id === selectedId)!}
+                unit={availableUnits.find((u: RootUnit) => u.id === selectedId)!}
                 isWhiteout={transitionPhase === 'whiteout'}
                 reduceMotion={!!reduceMotion}
               />
@@ -267,6 +280,8 @@ const CARD_MIN_H = 'min-h-[118px] md:min-h-[124px]';
 function UnitCard({
   index,
   cell,
+  gridCols,
+  gridRows,
   reduceMotion,
   unit,
   translations,
@@ -277,6 +292,8 @@ function UnitCard({
 }: {
   index: number;
   cell: { w: number; h: number };
+  gridCols: number;
+  gridRows: number;
   reduceMotion: boolean;
   unit: RootUnit;
   translations: (typeof TRANSLATIONS)['zh' | 'en'];
@@ -286,7 +303,7 @@ function UnitCard({
   onSelect: () => void;
 }) {
   const locked = unit.locked;
-  const off = spreadOffset(index, cell);
+  const off = spreadOffset(index, cell, gridCols, gridRows);
   const stackTwist = (index % 7) * 0.9 - 2.7;
 
   const getOpacity = () => {
