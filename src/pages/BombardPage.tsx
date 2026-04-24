@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '../lib/cn';
-import { loadUnitData, groupWordsByRoot, type RootGroup, type WordItem } from '../lib/loadUnitData';
+import { loadUnitData, type RootGroup, type WordItem } from '../lib/loadUnitData';
 
 /* ── 统一背面设计 token ── */
 const BACK_CLASSES = {
@@ -74,13 +74,12 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
       setError(null);
       
       try {
-        const words = await loadUnitData(unitId);
+        const data = await loadUnitData(unitId);
         if (mounted) {
-          const grouped = groupWordsByRoot(words);
-          setUnitData(grouped);
+          setUnitData(data);
           
-          if (words.length === 0) {
-            setError(`Unit ${unitId} 数据暂未找到，请确保 docs 文件夹中有对应的 Unite${unitId}.pages 文件并已转换为 JSON`);
+          if (data.length === 0) {
+            setError(`Unit ${unitId} 数据暂未找到，请运行 \`npm run gen\` 转换 docs 文件夹中的 TXT 文件`);
           }
         }
       } catch (err) {
@@ -336,7 +335,7 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
                 
                 {/* 释义 - hover 时显示 */}
                 <span className="text-sm text-zinc-500 opacity-0 transition-opacity group-hover:opacity-100">
-                  {root.meaning}
+                  {root.rootMeaning}
                 </span>
               </div>
 
