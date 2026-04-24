@@ -2,6 +2,7 @@ import { faPlay, faStop } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { cn } from '../lib/cn';
 import { UNIT_1_ROOTS } from '../data/unit1Roots';
 import type { RootGroup, WordItem } from '../data/unit1Roots';
 
@@ -290,8 +291,24 @@ function FlipCard({
   const openMs = reduceMotion ? 0 : FLIP_OPEN_MS;
   const closeMs = reduceMotion ? 0 : FLIP_CLOSE_MS;
 
+  /* 翻开 5s 后才显示释义 */
+  const [showDef, setShowDef] = useState(false);
+  useEffect(() => {
+    if (!flipped) {
+      setShowDef(false);
+      return;
+    }
+    const timer = setTimeout(() => setShowDef(true), 5000);
+    return () => clearTimeout(timer);
+  }, [flipped]);
+
   return (
-    <div className="perspective-[800px]" style={{ perspective: '800px' }}>
+    <motion.div
+      className="perspective-[800px] cursor-pointer"
+      style={{ perspective: '800px' }}
+      whileHover={{ scale: 1.04 }}
+      transition={{ type: 'spring', stiffness: 350, damping: 20 }}
+    >
       <motion.div
         className="relative w-full"
         style={{ transformStyle: 'preserve-3d' }}
@@ -335,11 +352,12 @@ function FlipCard({
 
         {/* ──── 正面 ──── */}
         <div
-          className={`absolute inset-0 flex aspect-[4/3] flex-col items-center justify-center gap-2 rounded-xl border overflow-hidden ${
+          className={cn(
+            'absolute inset-0 flex aspect-[4/3] flex-col items-center justify-center gap-2 rounded-xl border overflow-hidden',
             highlighted
               ? 'border-cyan-400/50 bg-gradient-to-br from-zinc-900 via-zinc-900 to-cyan-950/50 shadow-[0_0_28px_-6px_rgba(34,211,238,0.45)]'
               : 'border-white/10 bg-gradient-to-br from-zinc-800/95 via-zinc-900 to-black'
-          }`}
+          )}
           style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
         >
           {/* 单词 */}
@@ -347,12 +365,17 @@ function FlipCard({
             {word.word}
           </span>
           <div className="h-px w-12 bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
-          {/* 拆解释义 */}
-          <span className="max-w-[85%] text-center text-sm leading-relaxed text-zinc-300">
+          {/* 拆解释义 - 翻开后 5s 淡入 */}
+          <motion.span
+            className="max-w-[85%] text-center text-sm leading-relaxed text-zinc-300"
+            initial={{ opacity: 0, y: 4 }}
+            animate={showDef ? { opacity: 1, y: 0 } : { opacity: 0, y: 4 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          >
             {word.definition}
-          </span>
+          </motion.span>
         </div>
       </motion.div>
-    </div>
+    </motion.div>
   );
 }

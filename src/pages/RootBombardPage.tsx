@@ -352,6 +352,7 @@ function UnitCard({
           onClick={onSelect}
           whileHover={{
             y: -4,
+            scale: 1.04,
             transition: { type: 'spring', stiffness: 420, damping: 22 },
           }}
           whileTap={{ scale: 0.97 }}

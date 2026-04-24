@@ -124,7 +124,8 @@ export function BombardModule({ unitId, words }: BombardModuleProps) {
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: rootIndex * 0.1 + wordIndex * 0.05 }}
-                      className="group relative flex flex-col rounded-2xl border border-white/5 bg-white/[0.02] p-6 transition-all duration-300 hover:border-cyan-500/30 hover:bg-white/[0.05] hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)]"
+                      whileHover={{ scale: 1.03, transition: { type: 'spring', stiffness: 350, damping: 22 } }}
+                      className="group relative flex flex-col rounded-2xl border border-white/5 bg-white/[0.02] p-6 transition-all duration-300 will-change-transform hover:border-cyan-500/30 hover:bg-white/[0.05] hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)]"
                     >
                       <div className="mb-3 flex items-center justify-between">
                         <span className="font-display text-xl font-bold text-white group-hover:text-cyan-300 transition-colors">
