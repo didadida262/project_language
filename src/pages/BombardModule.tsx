@@ -52,7 +52,7 @@ export function BombardModule({ unitId, words }: BombardModuleProps) {
     <div className="relative flex h-screen min-h-0 flex-col bg-zinc-950 text-zinc-100">
       <AmbientBackdrop />
 
-      <header className="relative z-20 flex shrink-0 items-center justify-between border-b border-white/[0.08] bg-zinc-950/20 px-6 py-4 backdrop-blur-md">
+      <header className="relative z-20 flex shrink-0 items-center justify-between border-b border-white/[0.08] bg-zinc-950/20 px-4 py-3 md:px-6 md:py-4 backdrop-blur-md">
         <button
           type="button"
           onClick={() => navigate('/')}
@@ -75,11 +75,11 @@ export function BombardModule({ unitId, words }: BombardModuleProps) {
         </button>
       </header>
 
-      <main className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-8 md:px-8">
+      <main className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-5 sm:px-4 sm:py-8 md:px-8">
         <div className="mx-auto w-full max-w-6xl">
-          <div className="mb-12 flex items-end justify-between border-b border-white/5 pb-6">
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between border-b border-white/5 pb-4 sm:pb-6 md:mb-12">
             <div>
-              <h2 className="font-display text-3xl font-bold text-white tracking-tight">
+              <h2 className="font-display text-2xl font-bold text-white tracking-tight md:text-3xl">
                 {t.allWords}
               </h2>
               <p className="mt-2 text-sm text-zinc-400 font-medium">Total {words.length} words categorized by roots</p>
@@ -88,7 +88,7 @@ export function BombardModule({ unitId, words }: BombardModuleProps) {
               type="button"
               whileHover={{ scale: 1.05, boxShadow: '0 0 25px rgba(34,211,238,0.4)' }}
               whileTap={{ scale: 0.95 }}
-              className="rounded-xl border border-cyan-500/50 bg-cyan-500/10 px-8 py-3.5 text-base font-bold text-cyan-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition-all hover:bg-cyan-500/20"
+              className="shrink-0 rounded-xl border border-cyan-500/50 bg-cyan-500/10 px-6 py-2.5 text-sm font-bold text-cyan-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition-all hover:bg-cyan-500/20 md:px-8 md:py-3.5 md:text-base"
             >
               {t.startBtn}
             </motion.button>

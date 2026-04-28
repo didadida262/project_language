@@ -229,18 +229,20 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
   return (
     <div className="relative min-h-screen bg-zinc-950 text-zinc-100">
       {/* ── 顶栏 ── */}
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-white/[0.08] bg-zinc-950/70 px-6 py-3 backdrop-blur-xl">
-        <h1 className="font-display text-lg font-semibold tracking-tight text-white">
-          Unit {unitId} · 词根轰炸
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-white/[0.08] bg-zinc-950/70 px-3 py-2.5 backdrop-blur-xl md:px-6 md:py-3">
+        <h1 className="font-display text-sm font-semibold tracking-tight text-white md:text-lg">
+          <span className="hidden md:inline">Unit {unitId} · 词根轰炸</span>
+          <span className="md:hidden">Unit {unitId}</span>
         </h1>
         <div className="flex items-center gap-4">
           {/* 返回 */}
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-zinc-400 transition-colors hover:bg-white/10 hover:text-zinc-200"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:bg-white/10 hover:text-zinc-200 md:px-3 md:py-2 md:text-sm"
           >
-            ← 返回
+            <span className="hidden sm:inline">← 返回</span>
+            <span className="sm:hidden">←</span>
           </button>
 
           {/* 倒计时 */}
@@ -264,7 +266,7 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
             onClick={toggleRunning}
             disabled={loading || cardsCount === 0}
             className={`
-              inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition-colors
+              inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors md:px-4 md:py-2 md:text-sm
               ${
                 running
                   ? 'border-red-500/40 bg-red-950/50 text-red-300 hover:bg-red-900/50'
@@ -273,14 +275,15 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
               ${(loading || cardsCount === 0) ? ' opacity-50 cursor-not-allowed' : ''}
             `}
           >
-            <FontAwesomeIcon icon={running ? faStop : faPlay} className="h-3.5 w-3.5" />
-            {loading ? '加载中...' : running ? '停止' : '开始'}
+            <FontAwesomeIcon icon={running ? faStop : faPlay} className="h-3 w-3 md:h-3.5 md:w-3.5" />
+            <span className="hidden sm:inline">{loading ? '加载中...' : running ? '停止' : '开始'}</span>
+            <span className="sm:hidden">{loading ? '…' : running ? '停' : '开'}</span>
           </button>
         </div>
       </header>
 
       {/* ── 主体内容 ── */}
-      <main className="mx-auto max-w-6xl space-y-10 px-4 py-8 md:px-6">
+      <main className="mx-auto max-w-6xl space-y-8 px-3 py-5 sm:px-4 sm:py-8 md:space-y-10 md:px-6">
         {/* 加载状态 */}
         {loading && (
           <div className="flex items-center justify-center py-20">
@@ -325,13 +328,13 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
               className="scroll-mt-24"
             >
               {/* 词根标题 */}
-              <div className="mb-4 group relative flex items-center gap-3">
+              <div className="mb-3 sm:mb-4 group relative flex items-center gap-2 sm:gap-3">
                 {/* 词根 - 突出显示 */}
                 <span className="relative flex items-center">
                   {/* 发光背景 */}
                   <span className="absolute -inset-1.5 rounded-md bg-gradient-to-r from-cyan-500/20 to-violet-500/20 blur-sm transition-opacity opacity-50 group-hover:opacity-100" />
                   {/* 词根文字 */}
-                  <span className="relative font-display text-base font-bold tracking-widest bg-gradient-to-r from-cyan-300 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(6,182,212,0.4)]">
+                  <span className="relative font-display text-sm font-bold tracking-widest bg-gradient-to-r from-cyan-300 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(6,182,212,0.4)] sm:text-base">
                     {root.root}
                   </span>
                 </span>
@@ -339,8 +342,8 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
                 {/* 分隔线 */}
                 <div className="h-4 w-px bg-gradient-to-b from-transparent via-cyan-500/50 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
                 
-                {/* 释义 - hover 时显示 */}
-                <span className="text-sm text-zinc-500 opacity-0 transition-opacity group-hover:opacity-100">
+                {/* 释义 - hover 时显示 / 移动端始终显示（空间允许时） */}
+                <span className="text-xs text-zinc-500 opacity-100 transition-opacity sm:text-sm sm:opacity-0 sm:group-hover:opacity-100">
                   {root.meaning}
                 </span>
               </div>

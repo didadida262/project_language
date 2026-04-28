@@ -117,7 +117,7 @@ export function RootBombardPage({ onStartBombard }: RootBombardPageProps) {
     <div className="relative flex h-screen min-h-0 flex-col bg-zinc-950 text-zinc-100">
       <AmbientBackdrop />
 
-      <header className="relative z-20 flex shrink-0 items-center justify-between border-b border-white/[0.08] bg-zinc-950/20 px-6 py-4 backdrop-blur-md">
+      <header className="relative z-20 flex shrink-0 items-center justify-between border-b border-white/[0.08] bg-zinc-950/20 px-4 py-3 md:px-6 md:py-4 backdrop-blur-md">
         <h1 className="font-display text-xl font-semibold tracking-tight text-white md:text-2xl">
           {t.title}
         </h1>
@@ -132,12 +132,12 @@ export function RootBombardPage({ onStartBombard }: RootBombardPageProps) {
         </button>
       </header>
 
-      <main className="relative z-10 flex min-h-0 flex-1 flex-col">
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-6">
+        <main className="relative z-10 flex min-h-0 flex-1 flex-col">
+        <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-4 sm:py-5 md:px-6">
           <ul
             ref={gridRef}
             className={cn(
-              'mx-auto grid max-w-6xl grid-cols-4 gap-3',
+              'mx-auto grid max-w-6xl grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4',
               transitionPhase === 'whiteout' && 'pointer-events-none'
             )}
           >
@@ -164,7 +164,7 @@ export function RootBombardPage({ onStartBombard }: RootBombardPageProps) {
           </ul>
         </div>
 
-        <footer className="relative z-10 flex h-24 shrink-0 items-center justify-center border-t border-white/[0.08] bg-zinc-950/40 px-4 backdrop-blur-xl">
+        <footer className="relative z-10 flex h-20 shrink-0 items-center justify-center border-t border-white/[0.08] bg-zinc-950/40 px-4 backdrop-blur-xl md:h-24">
           <motion.button
             type="button"
             disabled={!canStart || isTransitioning}
@@ -172,7 +172,7 @@ export function RootBombardPage({ onStartBombard }: RootBombardPageProps) {
             whileHover={canStart && !isTransitioning ? { scale: 1.02 } : undefined}
             whileTap={canStart && !isTransitioning ? { scale: 0.98 } : undefined}
             className={cn(
-              'relative flex items-center justify-center gap-2 rounded-xl px-10 py-3.5 text-sm font-semibold tracking-wide transition-all duration-300',
+              'relative flex items-center justify-center gap-2 rounded-xl px-8 py-3 text-sm font-semibold tracking-wide transition-all duration-300 md:px-10 md:py-3.5',
               canStart
                 ? 'group border border-zinc-600/90 bg-gradient-to-b from-zinc-700/95 via-zinc-900 to-black text-zinc-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-12px_24px_-12px_rgba(0,0,0,0.5)] hover:border-cyan-500/25 hover:text-cyan-50 hover:animate-lightning-rim'
                 : 'cursor-not-allowed border border-zinc-800/90 bg-zinc-900/90 text-zinc-500 shadow-none',
@@ -277,7 +277,7 @@ function SelectedCardCenter({
 }
 
 /** 与底部「锁定」行同高，保证解锁/锁定卡片等高 */
-const CARD_MIN_H = 'min-h-[118px] md:min-h-[124px]';
+const CARD_MIN_H = 'min-h-[96px] sm:min-h-[110px] md:min-h-[118px] lg:min-h-[124px]';
 
 interface UnitCardProps {
   index: number;
