@@ -6,6 +6,7 @@ import React from 'react';
 import { AmbientBackdrop } from '../components/AmbientBackdrop';
 import { getAvailableRootUnits } from '../data/rootUnits';
 import type { RootUnit } from '../types/rootUnit';
+import { useAppLanguage } from '../context/AppLanguageContext';
 import { cn } from '../lib/cn';
 
 const GRID_COLS = 4;
@@ -58,7 +59,7 @@ interface RootBombardPageProps {
 }
 
 export function RootBombardPage({ onStartBombard }: RootBombardPageProps) {
-  const [lang, setLang] = useState<'zh' | 'en'>('en');
+  const { lang, toggleLang } = useAppLanguage();
   const t = TRANSLATIONS[lang];
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -124,7 +125,7 @@ export function RootBombardPage({ onStartBombard }: RootBombardPageProps) {
 
         <button
           type="button"
-          onClick={() => setLang((prev) => (prev === 'zh' ? 'en' : 'zh'))}
+          onClick={toggleLang}
           className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-all hover:border-cyan-500/30 hover:bg-white/10 hover:text-white"
         >
           <FontAwesomeIcon icon={faGlobe} className="text-cyan-400" />

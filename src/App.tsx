@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { VoiceCard } from './components/VoiceCard';
+import { AppLanguageProvider } from './context/AppLanguageContext';
 import { BombardPage } from './pages/BombardPage';
 import { RootBombardPage } from './pages/RootBombardPage';
 
@@ -38,19 +39,19 @@ export default function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  if (page === 'bombard') {
-    return (
-      <>
-        <BombardPage onBack={() => navigateTo('home')} unitId={unitId} />
-        <VoiceCard />
-      </>
-    );
-  }
-
   return (
-    <>
-      <RootBombardPage onStartBombard={(id) => { setUnitId(id); navigateTo('bombard', id); }} />
-      <VoiceCard />
-    </>
+    <AppLanguageProvider>
+      {page === 'bombard' ? (
+        <>
+          <BombardPage onBack={() => navigateTo('home')} unitId={unitId} />
+          <VoiceCard />
+        </>
+      ) : (
+        <>
+          <RootBombardPage onStartBombard={(id) => { setUnitId(id); navigateTo('bombard', id); }} />
+          <VoiceCard />
+        </>
+      )}
+    </AppLanguageProvider>
   );
 }
