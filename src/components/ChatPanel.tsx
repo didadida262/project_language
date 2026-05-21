@@ -2,13 +2,20 @@ import { faArrowUp, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useGameSessionOptional } from '../context/GameSessionContext';
 import { useLlmSettings } from '../context/LlmSettingsContext';
-import { fetchModels, sendChatStream, type ChatMessagePayload } from '../lib/api';
+import { fetchModels, sendChatStream, sendJudge, type ChatMessagePayload } from '../lib/api';
+import { cn } from '../lib/cn';
 
 const POS_STORAGE_KEY = 'chat-panel-position';
 const VIEWPORT_MARGIN = 20;
 const PANEL_WIDTH = 380;
 const PANEL_HEIGHT = 480;
+const COLLAPSED_WIDTH = 296;
+const PANEL_RADIUS_EXPANDED = 16;
+const PANEL_RADIUS_COLLAPSED = 11;
+
+const panelTransition = { type: 'spring' as const, stiffness: 360, damping: 30 };
 
 interface ChatMessage {
   id: number;
@@ -20,6 +27,7 @@ let idCounter = 0;
 
 export function ChatPanel() {
   const { settings, updateSettings } = useLlmSettings();
+  const game = useGameSessionOptional();
   const [collapsed, setCollapsed] = useState(false);
   const [loadingModels, setLoadingModels] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -33,6 +41,9 @@ export function ChatPanel() {
   const cardRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
+  const isDraggingRef = useRef(false);
+  const dragRafRef = useRef(0);
+  const dragCleanupRef = useRef<(() => void) | null>(null);
 
   const clampPosition = useCallback((x: number, y: number) => {
     const el = cardRef.current;
@@ -81,31 +92,31 @@ export function ChatPanel() {
     };
   }, [initPosition, clampPosition]);
 
+  const applyDomPosition = useCallback(
+    (x: number, y: number) => {
+      const el = cardRef.current;
+      if (!el) return clampPosition(x, y);
+      const next = clampPosition(x, y);
+      el.style.left = `${next.x}px`;
+      el.style.top = `${next.y}px`;
+      el.style.right = 'auto';
+      el.style.bottom = 'auto';
+      return next;
+    },
+    [clampPosition]
+  );
+
   useEffect(() => {
-    if (position) setPosition((p) => (p ? clampPosition(p.x, p.y) : p));
+    if (isDraggingRef.current || !position) return;
+    setPosition((p) => (p ? clampPosition(p.x, p.y) : p));
   }, [collapsed, clampPosition]);
 
   useEffect(() => {
-    if (!isDragging) return;
-    const onMove = (e: PointerEvent) => {
-      setPosition(
-        clampPosition(e.clientX - dragOffsetRef.current.x, e.clientY - dragOffsetRef.current.y)
-      );
-    };
-    const onUp = () => {
-      setIsDragging(false);
-      setPosition((p) => {
-        if (p) localStorage.setItem(POS_STORAGE_KEY, JSON.stringify(p));
-        return p;
-      });
-    };
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
-    return () => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-    };
-  }, [isDragging, clampPosition]);
+    if (!position || isDraggingRef.current) return;
+    applyDomPosition(position.x, position.y);
+  }, [position, applyDomPosition]);
+
+  useEffect(() => () => dragCleanupRef.current?.(), []);
 
   const resizeTextarea = useCallback(() => {
     const el = textareaRef.current;
@@ -141,22 +152,58 @@ export function ChatPanel() {
     };
   }, [settings.apiKey, settings.model, settings.models.length, updateSettings]);
 
+  const endDrag = useCallback(
+    (clientX: number, clientY: number) => {
+      if (!isDraggingRef.current) return;
+      isDraggingRef.current = false;
+      setIsDragging(false);
+      document.body.style.userSelect = '';
+      document.body.style.touchAction = '';
+      cancelAnimationFrame(dragRafRef.current);
+
+      const next = applyDomPosition(
+        clientX - dragOffsetRef.current.x,
+        clientY - dragOffsetRef.current.y
+      );
+      setPosition(next);
+      localStorage.setItem(POS_STORAGE_KEY, JSON.stringify(next));
+      dragCleanupRef.current?.();
+      dragCleanupRef.current = null;
+    },
+    [applyDomPosition]
+  );
+
   const handleDragStart = (e: React.PointerEvent<HTMLDivElement>) => {
     if (position === null || e.button !== 0 || loading) return;
     e.preventDefault();
-    dragOffsetRef.current = { x: e.clientX - position.x, y: e.clientY - position.y };
-    setIsDragging(true);
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
+    e.stopPropagation();
 
-  const handleDragEnd = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDragging) return;
-    e.currentTarget.releasePointerCapture(e.pointerId);
-    setIsDragging(false);
-    setPosition((p) => {
-      if (p) localStorage.setItem(POS_STORAGE_KEY, JSON.stringify(p));
-      return p;
-    });
+    dragOffsetRef.current = { x: e.clientX - position.x, y: e.clientY - position.y };
+    isDraggingRef.current = true;
+    setIsDragging(true);
+    document.body.style.userSelect = 'none';
+    document.body.style.touchAction = 'none';
+    applyDomPosition(position.x, position.y);
+
+    const onMove = (ev: PointerEvent) => {
+      if (!isDraggingRef.current) return;
+      cancelAnimationFrame(dragRafRef.current);
+      dragRafRef.current = requestAnimationFrame(() => {
+        applyDomPosition(ev.clientX - dragOffsetRef.current.x, ev.clientY - dragOffsetRef.current.y);
+      });
+    };
+
+    const onUp = (ev: PointerEvent) => endDrag(ev.clientX, ev.clientY);
+
+    window.addEventListener('pointermove', onMove, { passive: true });
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+
+    dragCleanupRef.current = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+    };
   };
 
   const submit = useCallback(async () => {
@@ -174,42 +221,59 @@ export function ChatPanel() {
     setError('');
     setLoading(true);
 
-    const history: ChatMessagePayload[] = messages.map((m) => ({
-      role: m.role,
-      content: m.content,
-    }));
-
     const assistantId = ++idCounter;
-    setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', content: '' }]);
 
     try {
-      await sendChatStream(text, history, settings, (delta) => {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId ? { ...m, content: m.content + delta } : m
-          )
+      if (game?.canJudge && game.currentCard) {
+        const card = game.currentCard;
+        const result = await sendJudge(
+          {
+            word: card.word,
+            definition: card.definition,
+            root: card.root,
+            rootMeaning: card.rootMeaning,
+            userExplanation: text,
+          },
+          settings
         );
-      });
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantId && !m.content.trim()
-            ? { ...m, content: '（无回复内容）' }
-            : m
-        )
-      );
+        game.recordVerdict(result.verdict);
+        const verdictColor = result.verdict === '正确' ? '✅' : '❌';
+        const reply = `${verdictColor} 【裁决】${result.verdict}\n\n${result.feedback}`;
+        setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', content: reply }]);
+      } else {
+        const history: ChatMessagePayload[] = messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        }));
+        await sendChatStream(text, history, settings, (delta) => {
+          setMessages((prev) => {
+            const existing = prev.find((m) => m.id === assistantId);
+            if (!existing) {
+              return [...prev, { id: assistantId, role: 'assistant', content: delta }];
+            }
+            return prev.map((m) =>
+              m.id === assistantId ? { ...m, content: m.content + delta } : m
+            );
+          });
+        });
+        setMessages((prev) => {
+          const hasReply = prev.some((m) => m.id === assistantId && m.content.trim());
+          if (hasReply) return prev;
+          return [...prev, { id: assistantId, role: 'assistant', content: '（无回复内容）' }];
+        });
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : '请求失败';
       setError(msg);
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantId ? { ...m, content: `错误：${msg}` } : m
-        )
-      );
+      setMessages((prev) => [
+        ...prev.filter((m) => m.id !== assistantId),
+        { id: assistantId, role: 'assistant', content: `错误：${msg}` },
+      ]);
     } finally {
       setLoading(false);
       textareaRef.current?.focus();
     }
-  }, [input, loading, messages, settings]);
+  }, [game, input, loading, messages, settings]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -224,45 +288,70 @@ export function ChatPanel() {
   return (
     <motion.div
       ref={cardRef}
+      layout={!isDragging}
       className="fixed z-50 flex flex-col select-none"
       style={{
-        left: positioned ? position.x : undefined,
-        top: positioned ? position.y : undefined,
+        left: positioned && !isDragging ? position.x : undefined,
+        top: positioned && !isDragging ? position.y : undefined,
         right: positioned ? 'auto' : VIEWPORT_MARGIN,
         bottom: positioned ? 'auto' : VIEWPORT_MARGIN,
-        width: collapsed ? 'auto' : PANEL_WIDTH,
+        willChange: isDragging ? 'left, top' : 'auto',
+      }}
+      initial={{ opacity: 0, scale: 0.94, y: 14 }}
+      animate={{
+        opacity: 1,
+        scale: 1,
+        y: 0,
+        width: collapsed ? COLLAPSED_WIDTH : PANEL_WIDTH,
         height: collapsed ? 'auto' : PANEL_HEIGHT,
       }}
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: 'easeOut' }}
+      transition={isDragging ? { duration: 0 } : panelTransition}
     >
-      <div
-        className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl"
+      <motion.div
+        layout={!isDragging}
+        className={cn(
+          'flex min-h-0 w-full flex-1 flex-col overflow-hidden',
+          game?.canJudge && 'ring-2 ring-cyan-500/50 ring-offset-2 ring-offset-transparent'
+        )}
+        animate={{ borderRadius: collapsed ? PANEL_RADIUS_COLLAPSED : PANEL_RADIUS_EXPANDED }}
+        transition={isDragging ? { duration: 0 } : panelTransition}
         style={{
           background: 'rgba(14,14,20,0.97)',
-          border: '1px solid rgba(255,255,255,0.09)',
+          border: game?.canJudge
+            ? '1px solid rgba(34,211,238,0.35)'
+            : '1px solid rgba(255,255,255,0.09)',
           backdropFilter: 'blur(20px)',
-          boxShadow: '0 8px 40px rgba(0,0,0,0.45)',
+          boxShadow: game?.canJudge
+            ? '0 0 40px -8px rgba(34,211,238,0.45)'
+            : '0 8px 40px rgba(0,0,0,0.45)',
         }}
       >
         <div
-          className="flex shrink-0 items-center justify-between gap-2 border-b border-white/[0.07] px-3 py-2"
-          style={{ borderBottom: collapsed ? 'none' : undefined }}
+          className={cn(
+            'flex shrink-0 items-center justify-between gap-2 transition-colors',
+            collapsed
+              ? 'min-w-[296px] px-5 py-1.5'
+              : 'border-b border-white/[0.07] px-3 py-2'
+          )}
         >
           <div
-            className="flex min-w-0 flex-1 items-center gap-2"
+            className="flex min-w-0 flex-1 items-center gap-2.5"
             style={{ cursor: loading ? 'default' : isDragging ? 'grabbing' : 'grab' }}
             onPointerDown={handleDragStart}
-            onPointerUp={handleDragEnd}
-            onPointerCancel={handleDragEnd}
             title="拖动移动"
           >
             <span
               className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
               style={{ background: loading ? 'rgba(168,85,247,0.9)' : 'rgba(99,102,241,0.9)' }}
             />
-            <span className="truncate text-xs font-medium text-white/80">判官</span>
+            <span
+              className={cn(
+                'font-medium text-white/85',
+                collapsed ? 'text-sm tracking-wide' : 'truncate text-xs'
+              )}
+            >
+              判官
+            </span>
           </div>
           {!collapsed && (
             <select
@@ -289,24 +378,32 @@ export function ChatPanel() {
                 )}
             </select>
           )}
-          <button
+          <motion.button
             type="button"
-            className="shrink-0 px-1 py-1 text-white/30 hover:text-white/50"
+            className="shrink-0 px-1.5 py-1 text-white/35 hover:text-white/60"
             onClick={() => setCollapsed((v) => !v)}
             onPointerDown={(e) => e.stopPropagation()}
+            whileTap={{ scale: 0.9 }}
           >
-            {collapsed ? '▴' : '▾'}
-          </button>
+            <motion.span
+              animate={{ rotate: collapsed ? 0 : 180 }}
+              transition={{ duration: 0.22 }}
+              className="inline-block text-[10px] leading-none"
+            >
+              ▴
+            </motion.span>
+          </motion.button>
         </div>
 
         <AnimatePresence initial={false}>
           {!collapsed && (
             <motion.div
               key="body"
-              className="flex min-h-0 flex-1 flex-col"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              className="flex min-h-0 flex-1 flex-col overflow-hidden"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
             >
               <div
                 ref={scrollRef}
@@ -317,43 +414,43 @@ export function ChatPanel() {
                     向判官提问词根、单词或英语学习相关问题
                   </p>
                 )}
-                {messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
+                {messages.map((msg) => {
+                  if (msg.role === 'assistant' && !msg.content.trim()) return null;
+                  return (
                     <div
-                      className="max-w-[88%] rounded-2xl px-3 py-2 text-sm leading-relaxed"
-                      style={{
-                        background:
-                          msg.role === 'user'
-                            ? 'linear-gradient(135deg, #4f46e5, #6366f1)'
-                            : 'rgba(255,255,255,0.06)',
-                        color: msg.role === 'user' ? '#fff' : 'rgba(255,255,255,0.9)',
-                        border:
-                          msg.role === 'assistant'
-                            ? '1px solid rgba(255,255,255,0.08)'
-                            : 'none',
-                      }}
+                      key={msg.id}
+                      className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
-                      <p className="whitespace-pre-wrap break-words">{msg.content}</p>
-                    </div>
-                  </div>
-                ))}
-                {loading &&
-                  (messages.length === 0 ||
-                    messages[messages.length - 1]?.role !== 'assistant' ||
-                    !messages[messages.length - 1]?.content) && (
-                    <div className="flex justify-start">
                       <div
-                        className="flex items-center gap-2 rounded-2xl px-3 py-2 text-xs text-white/40"
-                        style={{ background: 'rgba(255,255,255,0.06)' }}
+                        className="max-w-[88%] rounded-2xl px-3 py-2 text-sm leading-relaxed"
+                        style={{
+                          background:
+                            msg.role === 'user'
+                              ? 'linear-gradient(135deg, #4f46e5, #6366f1)'
+                              : 'rgba(255,255,255,0.06)',
+                          color: msg.role === 'user' ? '#fff' : 'rgba(255,255,255,0.9)',
+                          border:
+                            msg.role === 'assistant'
+                              ? '1px solid rgba(255,255,255,0.08)'
+                              : 'none',
+                        }}
                       >
-                        <FontAwesomeIcon icon={faSpinner} className="animate-spin text-indigo-400" />
-                        思考中...
+                        <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                       </div>
                     </div>
-                  )}
+                  );
+                })}
+                {loading && (
+                  <div className="flex justify-start">
+                    <div
+                      className="flex items-center gap-2 rounded-2xl px-3 py-2 text-xs text-white/40"
+                      style={{ background: 'rgba(255,255,255,0.06)' }}
+                    >
+                      <FontAwesomeIcon icon={faSpinner} className="animate-spin text-indigo-400" />
+                      {game?.canJudge ? '阅卷中...' : '思考中...'}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {error && (
@@ -375,7 +472,13 @@ export function ChatPanel() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="输入消息，Enter 发送，Shift+Enter 换行"
+                    placeholder={
+                      game?.canJudge && game.currentCard
+                        ? `解释「${game.currentCard.word}」词根含义，发送阅卷`
+                        : game?.active
+                          ? '本轮已阅卷，可继续向判官提问'
+                          : '输入消息，Enter 发送，Shift+Enter 换行'
+                    }
                     disabled={loading}
                     className="max-h-[120px] min-h-[24px] min-w-0 flex-1 resize-none bg-transparent px-1 py-1 text-sm text-white/90 outline-none placeholder:text-white/25 disabled:opacity-50"
                   />
@@ -402,7 +505,7 @@ export function ChatPanel() {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }

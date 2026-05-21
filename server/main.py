@@ -7,7 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
 from agent import run_chat, stream_chat
-from agent.schema import ChatRequest, ChatResponse
+from agent.judge import run_judge
+from agent.schema import ChatRequest, ChatResponse, JudgeRequest, JudgeResponse
 
 MODELS_API_URL = "https://aiplatform.njsrd.com/nexus/api/api-keys/models"
 
@@ -83,6 +84,33 @@ def _validate_chat_request(req: ChatRequest) -> None:
         raise HTTPException(status_code=400, detail="model 不能为空")
     if not req.message.strip():
         raise HTTPException(status_code=400, detail="message 不能为空")
+
+
+@app.post("/judge", response_model=JudgeResponse)
+async def judge(req: JudgeRequest):
+    """判官阅卷：评判用户解释是否符合当前词根/单词。"""
+    _validate_chat_request(
+        ChatRequest(
+            message=req.user_explanation,
+            base_url=req.base_url,
+            api_key=req.api_key,
+            model=req.model,
+        )
+    )
+    try:
+        result = run_judge(
+            word=req.word.strip(),
+            definition=req.definition.strip(),
+            root=req.root.strip(),
+            root_meaning=req.root_meaning.strip(),
+            user_explanation=req.user_explanation.strip(),
+            base_url=req.base_url.strip() or "https://aiplatform.njsrd.com/llm/v1",
+            api_key=req.api_key.strip(),
+            model=req.model.strip(),
+        )
+        return JudgeResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/chat/stream")

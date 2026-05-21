@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ChatPanel } from './components/ChatPanel';
 import { AppLanguageProvider } from './context/AppLanguageContext';
+import { GameSessionProvider } from './context/GameSessionContext';
 import { LlmSettingsProvider } from './context/LlmSettingsContext';
 import { SettingsModalProvider } from './context/SettingsModalContext';
 import { BombardPage } from './pages/BombardPage';
@@ -46,10 +47,10 @@ export default function App() {
       <LlmSettingsProvider>
         <SettingsModalProvider>
           {page === 'bombard' ? (
-            <>
+            <GameSessionProvider>
               <BombardPage onBack={() => navigateTo('home')} unitId={unitId} />
               <ChatPanel />
-            </>
+            </GameSessionProvider>
           ) : (
             <>
               <RootBombardPage onStartBombard={(id) => { setUnitId(id); navigateTo('bombard', id); }} />

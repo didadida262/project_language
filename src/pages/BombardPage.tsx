@@ -1,6 +1,10 @@
 import { faPlay, faStop } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { FinaleOverlay } from '../components/FinaleOverlay';
+import { RoundPromptBanner } from '../components/RoundPromptBanner';
+import { Scoreboard } from '../components/Scoreboard';
 import { SettingsButton } from '../components/SettingsButton';
+import { MAX_ROUNDS, useGameSession } from '../context/GameSessionContext';
 import { useSettingsModal } from '../context/SettingsModalContext';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -56,6 +60,9 @@ function pickRandom(cards: FlatCard[], exclude?: { rootIdx: number; wordIdx: num
 export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: number }) {
   const reduceMotion = useReducedMotion();
   const { openSettings } = useSettingsModal();
+  const game = useGameSession();
+  const roundRef = useRef(0);
+  const currentRef = useRef<FlatCard | null>(null);
   
   // 动态加载单元数据
   const [unitData, setUnitData] = useState<RootGroup[]>([]);
@@ -156,22 +163,37 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
   const nextRound = useCallback(
     async (prev: FlatCard | null) => {
       if (allCards.length === 0) return;
-      
-      // 先翻回上一张
-      if (prev) flipClose(prev);
 
-      // 短暂停顿让翻回动画播放
+      if (prev) flipClose(prev);
       await new Promise<void>((r) => setTimeout(r, FLIP_CLOSE_MS + 80));
 
-      // 随机抽卡
+      const nextRoundNum = roundRef.current + 1;
+      if (nextRoundNum > MAX_ROUNDS) {
+        clearTimers();
+        setRunning(false);
+        setCountdown(0);
+        setCurrent(null);
+        setFlipped({});
+        game.completeSession();
+        return;
+      }
+
       try {
         const card = pickRandom(allCards, prev ?? undefined);
+        roundRef.current = nextRoundNum;
         setCurrent(card);
 
-        // 滚动到对应词根
-        await scrollToRoot(card.rootIdx);
+        game.beginRound(
+          {
+            word: card.word.word,
+            definition: card.word.definition,
+            root: card.root.root,
+            rootMeaning: card.root.meaning,
+          },
+          nextRoundNum
+        );
 
-        // 翻开
+        await scrollToRoot(card.rootIdx);
         flipOpen(card);
 
         // 开始倒计时 - 优化：使用 requestAnimationFrame 减少重渲染
@@ -202,7 +224,7 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
         console.error('Failed to pick card:', err);
       }
     },
-    [allCards, flipClose, flipOpen, scrollToRoot],
+    [allCards, clearTimers, flipClose, flipOpen, game, scrollToRoot],
   );
 
   /* ── 开始 / 停止 ── */
@@ -212,16 +234,35 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
       setRunning(false);
       setCurrent(null);
       setCountdown(0);
-      // 所有卡牌翻回背面
       setFlipped({});
+      roundRef.current = 0;
+      game.stopSession();
     } else {
+      roundRef.current = 0;
+      game.startSession();
       setRunning(true);
       nextRound(null);
     }
-  }, [clearTimers, nextRound, running]);
+  }, [clearTimers, game, nextRound, running]);
   
   /* 性能优化：缓存 allCards 长度 */
   const cardsCount = allCards.length;
+
+  useEffect(() => {
+    currentRef.current = current;
+  }, [current]);
+
+  const advanceAfterVerdict = useCallback(() => {
+    if (!running) return;
+    clearTimers();
+    setCountdown(0);
+    void nextRound(currentRef.current);
+  }, [running, clearTimers, nextRound]);
+
+  useEffect(() => {
+    game.registerAdvanceRound(advanceAfterVerdict);
+    return () => game.unregisterAdvanceRound();
+  }, [game, advanceAfterVerdict]);
 
   /* ── 卸载清理 ── */
   useEffect(() => clearTimers, [clearTimers]);
@@ -234,12 +275,15 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
   return (
     <div className="relative min-h-screen bg-zinc-950 text-zinc-100">
       {/* ── 顶栏 ── */}
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-white/[0.08] bg-zinc-950/70 px-3 py-2.5 backdrop-blur-xl md:px-6 md:py-3">
-        <h1 className="font-display text-sm font-semibold tracking-tight text-white md:text-lg">
+      <FinaleOverlay />
+
+      <header className="sticky top-0 z-40 flex flex-col gap-2 border-b border-white/[0.08] bg-zinc-950/70 px-3 py-2.5 backdrop-blur-xl md:px-6 md:py-3">
+        <div className="flex items-center justify-between gap-2">
+        <h1 className="font-display shrink-0 text-sm font-semibold tracking-tight text-white md:text-lg">
           <span className="hidden md:inline">Unit {unitId} · 词根斩</span>
           <span className="md:hidden">Unit {unitId}</span>
         </h1>
-        <div className="flex items-center gap-2 md:gap-4">
+        <div className="flex shrink-0 items-center gap-2 md:gap-4">
           <SettingsButton onClick={openSettings} />
           {/* 返回 */}
           <button
@@ -286,7 +330,11 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
             <span className="sm:hidden">{loading ? '…' : running ? '停' : '开'}</span>
           </button>
         </div>
+        </div>
+        <Scoreboard />
       </header>
+
+      <RoundPromptBanner countdown={countdown} />
 
       {/* ── 主体内容 ── */}
       <main className="mx-auto max-w-6xl space-y-8 px-3 py-5 sm:px-4 sm:py-8 md:space-y-10 md:px-6">

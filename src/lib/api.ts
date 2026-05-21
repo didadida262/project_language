@@ -7,6 +7,19 @@ export interface ChatMessagePayload {
   content: string;
 }
 
+export interface JudgePayload {
+  word: string;
+  definition: string;
+  root: string;
+  rootMeaning: string;
+  userExplanation: string;
+}
+
+export interface JudgeResult {
+  verdict: '正确' | '错误';
+  feedback: string;
+}
+
 export async function fetchModels(apiKey: string): Promise<string[]> {
   const params = new URLSearchParams({ api_key: apiKey });
   const res = await fetch(`${API_BASE}/models?${params}`);
@@ -29,7 +42,6 @@ function parseSsePayload(line: string): { content?: string; error?: string } | n
   }
 }
 
-/** SSE 流式对话，通过 onDelta 逐段回调正文 */
 export async function sendChatStream(
   message: string,
   history: ChatMessagePayload[],
@@ -86,7 +98,41 @@ export async function sendChatStream(
   }
 }
 
-/** 非流式对话（保留兼容） */
+export async function sendJudge(
+  payload: JudgePayload,
+  settings: LlmSettings
+): Promise<JudgeResult> {
+  const res = await fetch(`${API_BASE}/judge`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      word: payload.word,
+      definition: payload.definition,
+      root: payload.root,
+      root_meaning: payload.rootMeaning,
+      user_explanation: payload.userExplanation,
+      base_url: settings.baseUrl,
+      api_key: settings.apiKey,
+      model: settings.model,
+    }),
+  });
+
+  if (!res.ok) {
+    let detail = await res.text().catch(() => '');
+    try {
+      const json = JSON.parse(detail) as { detail?: string };
+      detail = json.detail ?? detail;
+    } catch {
+      /* use raw text */
+    }
+    throw new Error(detail || `阅卷失败 (${res.status})`);
+  }
+
+  const data = (await res.json()) as { verdict: string; feedback: string };
+  const verdict = data.verdict?.includes('正确') ? '正确' : '错误';
+  return { verdict, feedback: data.feedback ?? '' };
+}
+
 export async function sendChat(
   message: string,
   history: ChatMessagePayload[],
