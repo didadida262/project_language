@@ -1,43 +1,32 @@
-# 韦林英文词根轰炸
+# 英文词根斩
 
-基于 **React + TypeScript + Vite + Tailwind CSS + Framer Motion** 的英语词根学习应用，右下角集成离线语音识别浮动卡片。
+基于 **React + TypeScript + Vite + Tailwind CSS + Framer Motion** 的英语词根学习应用，右下角集成 ChatGPT 风格 AI 对话面板。
 
-## ✨ 特性
+## 架构
 
-- 🎨 精美 UI：现代化设计，暗色主题
-- ⚡ 60fps 流畅动画体验
-- 📦 完全 TypeScript 支持
-- 🎙️ 离线语音识别（Whisper large-v3-turbo，MPS 加速）
+```
+前端 (React)  →  后端 (FastAPI)  →  AI Agent (LangGraph)  →  大模型 (OpenAI 兼容 API)
+```
+
+- **前端**：聊天面板、大模型设置（Base URL / API Key / 模型）
+- **后端**：`/chat` 对话、`/models` 代理模型列表
+- **Agent**：参考 `Week1/`，使用 LangGraph + LangChain 调用大模型
 
 ## 启动方式
 
-项目分两个服务，需分别在两个终端启动。
+需分别在两个终端启动后端与前端。
 
-### 终端 1 — Python 语音识别后端
+### 终端 1 — Python 后端
 
 ```bash
 cd server
+python3 -m venv venv
 source venv/bin/activate
-python3 main.py
+pip install -r requirements.txt
+python main.py
 ```
 
-看到以下输出即表示就绪：
-
-```
-[Whisper] 推理设备: mps
-[Whisper] 模型加载完成 ✓
-INFO: Uvicorn running on http://0.0.0.0:8000
-```
-
-> **首次使用须知**
-> 1. 需先安装 ffmpeg：`brew install ffmpeg`
-> 2. 需先创建虚拟环境并安装依赖：
->    ```bash
->    cd server
->    python3 -m venv venv
->    source venv/bin/activate
->    pip3 install -r requirements.txt
->    ```
+就绪后：`INFO: Uvicorn running on http://0.0.0.0:8000`
 
 ### 终端 2 — 前端
 
@@ -45,43 +34,38 @@ INFO: Uvicorn running on http://0.0.0.0:8000
 yarn dev
 ```
 
-浏览器打开 `http://localhost:5173`，页面右下角语音识别卡片中：
+浏览器打开 `http://localhost:5173`：
 
-1. **点击麦克风**开始录音（首次会请求麦克风权限）
-2. **再次点击**结束录音，自动送本地 Whisper 识别并显示文字
+1. 点击顶部 **齿轮** 打开设置，填写 API Key，点击「获取模型列表」并选择模型
+2. 右下角 **AI 助手** 面板输入问题，Enter 发送（Shift+Enter 换行）
+
+### 默认配置
+
+| 项 | 默认值 |
+|----|--------|
+| Base URL | `https://aiplatform.njsrd.com/llm/v1` |
+| 模型列表接口 | `https://aiplatform.njsrd.com/nexus/api/api-keys/models` |
 
 ## 目录结构
 
 ```
 ├── src/
 │   ├── components/
-│   │   └── VoiceCard.tsx     # 语音识别浮动卡片
-│   ├── pages/                # 页面组件
-│   ├── data/                 # 词根数据
-│   └── lib/                  # 工具函数
+│   │   ├── ChatPanel.tsx       # ChatGPT 风格对话面板
+│   │   ├── SettingsModal.tsx   # 大模型设置弹窗
+│   │   └── SettingsButton.tsx
+│   ├── context/                # 语言、LLM 设置、设置弹窗状态
+│   └── lib/api.ts              # 前端 API 封装
 ├── server/
-│   ├── main.py               # FastAPI + Whisper 后端
-│   ├── requirements.txt      # Python 依赖
-│   └── venv/                 # Python 虚拟环境（本地，不提交）
-└── docker-compose.yml        # 可选：Docker 启动后端
-```
-
-## 语音识别模型
-
-- 模型：`whisper-large-v3-turbo`（本地 HuggingFace 格式）
-- 路径：`~/Desktop/work/whisper-large-v3-turbo`
-- 推理设备：Apple M 系列芯片自动启用 MPS 加速
-
-切换模型路径：
-
-```bash
-WHISPER_MODEL_PATH=/your/model/path python3 main.py
+│   ├── main.py                 # FastAPI 路由
+│   └── agent/                  # LangGraph Agent（参考 Week1）
+├── Week1/                      # Agent 参考实现
+└── docker-compose.yml
 ```
 
 ## 构建
 
 ```bash
-yarn build        # 构建前端
-yarn build:check  # TypeScript 类型检查
-yarn preview      # 预览构建产物
+yarn build
+yarn build:check
 ```

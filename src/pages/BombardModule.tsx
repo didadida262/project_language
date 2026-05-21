@@ -20,14 +20,14 @@ interface BombardModuleProps {
 
 const TRANSLATIONS = {
   zh: {
-    title: (unit: number) => `Unit ${unit} 词根轰炸`,
+    title: (unit: number) => `Unit ${unit} · 词根斩`,
     back: '返回',
     allWords: '全部单词',
     startBtn: '开始轰炸',
     lang: 'EN',
   },
   en: {
-    title: (unit: number) => `Unit ${unit} Root Bombard`,
+    title: (unit: number) => `Unit ${unit} · Root Zhan`,
     back: 'Back',
     allWords: 'All Words',
     startBtn: 'Start Bombard',

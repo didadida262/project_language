@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
-import { VoiceCard } from './components/VoiceCard';
+import { ChatPanel } from './components/ChatPanel';
 import { AppLanguageProvider } from './context/AppLanguageContext';
+import { LlmSettingsProvider } from './context/LlmSettingsContext';
+import { SettingsModalProvider } from './context/SettingsModalContext';
 import { BombardPage } from './pages/BombardPage';
 import { RootBombardPage } from './pages/RootBombardPage';
 
@@ -41,17 +43,21 @@ export default function App() {
 
   return (
     <AppLanguageProvider>
-      {page === 'bombard' ? (
-        <>
-          <BombardPage onBack={() => navigateTo('home')} unitId={unitId} />
-          <VoiceCard />
-        </>
-      ) : (
-        <>
-          <RootBombardPage onStartBombard={(id) => { setUnitId(id); navigateTo('bombard', id); }} />
-          <VoiceCard />
-        </>
-      )}
+      <LlmSettingsProvider>
+        <SettingsModalProvider>
+          {page === 'bombard' ? (
+            <>
+              <BombardPage onBack={() => navigateTo('home')} unitId={unitId} />
+              <ChatPanel />
+            </>
+          ) : (
+            <>
+              <RootBombardPage onStartBombard={(id) => { setUnitId(id); navigateTo('bombard', id); }} />
+              <ChatPanel />
+            </>
+          )}
+        </SettingsModalProvider>
+      </LlmSettingsProvider>
     </AppLanguageProvider>
   );
 }

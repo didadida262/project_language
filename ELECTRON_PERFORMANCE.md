@@ -78,7 +78,7 @@ npm run electron:dev
 1. 启动应用后按 `Cmd+Option+I` (macOS) 打开 DevTools
 2. 打开 Performance 面板
 3. 点击录制按钮
-4. 进行词根轰炸操作
+4. 进行词根斩练习操作
 5. 停止录制并分析
 6. 查看 FPS、CPU 和内存使用情况
 

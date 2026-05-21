@@ -1,5 +1,7 @@
 import { faPlay, faStop } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { SettingsButton } from '../components/SettingsButton';
+import { useSettingsModal } from '../context/SettingsModalContext';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import React from 'react';
@@ -20,7 +22,7 @@ const BACK_CLASSES = {
 /* ── 常量 ── */
 const FLIP_OPEN_MS = 480;
 const FLIP_CLOSE_MS = 380;
-const REVEAL_SECONDS = 10;
+const REVEAL_SECONDS = 30;
 
 /* ── 全量 word 索引（用于随机抽取） ── */
 interface FlatCard {
@@ -51,6 +53,7 @@ function pickRandom(cards: FlatCard[], exclude?: { rootIdx: number; wordIdx: num
    ════════════════════════════════════════ */
 export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: number }) {
   const reduceMotion = useReducedMotion();
+  const { openSettings } = useSettingsModal();
   
   // 动态加载单元数据
   const [unitData, setUnitData] = useState<RootGroup[]>([]);
@@ -231,10 +234,11 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
       {/* ── 顶栏 ── */}
       <header className="sticky top-0 z-40 flex items-center justify-between border-b border-white/[0.08] bg-zinc-950/70 px-3 py-2.5 backdrop-blur-xl md:px-6 md:py-3">
         <h1 className="font-display text-sm font-semibold tracking-tight text-white md:text-lg">
-          <span className="hidden md:inline">Unit {unitId} · 词根轰炸</span>
+          <span className="hidden md:inline">Unit {unitId} · 词根斩</span>
           <span className="md:hidden">Unit {unitId}</span>
         </h1>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
+          <SettingsButton onClick={openSettings} />
           {/* 返回 */}
           <button
             type="button"

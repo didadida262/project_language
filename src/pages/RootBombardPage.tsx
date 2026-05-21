@@ -4,6 +4,8 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useCallback, useLayoutEffect, useRef, useState, useEffect } from 'react';
 import React from 'react';
 import { AmbientBackdrop } from '../components/AmbientBackdrop';
+import { SettingsButton } from '../components/SettingsButton';
+import { useSettingsModal } from '../context/SettingsModalContext';
 import { getAvailableRootUnits } from '../data/rootUnits';
 import type { RootUnit } from '../types/rootUnit';
 import { useAppLanguage } from '../context/AppLanguageContext';
@@ -37,7 +39,7 @@ function spreadOffset(
 
 const TRANSLATIONS = {
   zh: {
-    title: '韦林英文词根轰炸',
+    title: '英文词根斩',
     startBtn: '开始轰炸',
     locked: '锁定',
     unlocked: '未解锁',
@@ -45,7 +47,7 @@ const TRANSLATIONS = {
     lang: 'EN',
   },
   en: {
-    title: 'Weilin Root Bombard',
+    title: 'English Root Zhan',
     startBtn: 'Start Bombard',
     locked: 'LOCKED',
     unlocked: 'Not Unlocked',
@@ -60,6 +62,7 @@ interface RootBombardPageProps {
 
 export function RootBombardPage({ onStartBombard }: RootBombardPageProps) {
   const { lang, toggleLang } = useAppLanguage();
+  const { openSettings } = useSettingsModal();
   const t = TRANSLATIONS[lang];
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -123,14 +126,17 @@ export function RootBombardPage({ onStartBombard }: RootBombardPageProps) {
           {t.title}
         </h1>
 
-        <button
-          type="button"
-          onClick={toggleLang}
-          className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-all hover:border-cyan-500/30 hover:bg-white/10 hover:text-white"
-        >
-          <FontAwesomeIcon icon={faGlobe} className="text-cyan-400" />
-          <span>{t.lang}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <SettingsButton onClick={openSettings} />
+          <button
+            type="button"
+            onClick={toggleLang}
+            className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-all hover:border-cyan-500/30 hover:bg-white/10 hover:text-white"
+          >
+            <FontAwesomeIcon icon={faGlobe} className="text-cyan-400" />
+            <span>{t.lang}</span>
+          </button>
+        </div>
       </header>
 
         <main className="relative z-10 flex min-h-0 flex-1 flex-col">
