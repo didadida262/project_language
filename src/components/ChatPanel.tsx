@@ -42,8 +42,11 @@ export function ChatPanel() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
+  const dragActiveRef = useRef(false);
+  const pointerStartRef = useRef({ x: 0, y: 0 });
   const dragRafRef = useRef(0);
   const dragCleanupRef = useRef<(() => void) | null>(null);
+  const DRAG_THRESHOLD_PX = 4;
 
   const clampPosition = useCallback((x: number, y: number) => {
     const el = cardRef.current;
@@ -92,29 +95,10 @@ export function ChatPanel() {
     };
   }, [initPosition, clampPosition]);
 
-  const applyDomPosition = useCallback(
-    (x: number, y: number) => {
-      const el = cardRef.current;
-      if (!el) return clampPosition(x, y);
-      const next = clampPosition(x, y);
-      el.style.left = `${next.x}px`;
-      el.style.top = `${next.y}px`;
-      el.style.right = 'auto';
-      el.style.bottom = 'auto';
-      return next;
-    },
-    [clampPosition]
-  );
-
   useEffect(() => {
     if (isDraggingRef.current || !position) return;
     setPosition((p) => (p ? clampPosition(p.x, p.y) : p));
   }, [collapsed, clampPosition]);
-
-  useEffect(() => {
-    if (!position || isDraggingRef.current) return;
-    applyDomPosition(position.x, position.y);
-  }, [position, applyDomPosition]);
 
   useEffect(() => () => dragCleanupRef.current?.(), []);
 
@@ -155,22 +139,27 @@ export function ChatPanel() {
   const endDrag = useCallback(
     (clientX: number, clientY: number) => {
       if (!isDraggingRef.current) return;
+      const didDrag = dragActiveRef.current;
       isDraggingRef.current = false;
+      dragActiveRef.current = false;
       setIsDragging(false);
       document.body.style.userSelect = '';
       document.body.style.touchAction = '';
       cancelAnimationFrame(dragRafRef.current);
 
-      const next = applyDomPosition(
-        clientX - dragOffsetRef.current.x,
-        clientY - dragOffsetRef.current.y
-      );
-      setPosition(next);
-      localStorage.setItem(POS_STORAGE_KEY, JSON.stringify(next));
+      if (didDrag) {
+        const next = clampPosition(
+          clientX - dragOffsetRef.current.x,
+          clientY - dragOffsetRef.current.y
+        );
+        setPosition(next);
+        localStorage.setItem(POS_STORAGE_KEY, JSON.stringify(next));
+      }
+
       dragCleanupRef.current?.();
       dragCleanupRef.current = null;
     },
-    [applyDomPosition]
+    [clampPosition]
   );
 
   const handleDragStart = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -179,17 +168,28 @@ export function ChatPanel() {
     e.stopPropagation();
 
     dragOffsetRef.current = { x: e.clientX - position.x, y: e.clientY - position.y };
+    pointerStartRef.current = { x: e.clientX, y: e.clientY };
+    dragActiveRef.current = false;
     isDraggingRef.current = true;
-    setIsDragging(true);
-    document.body.style.userSelect = 'none';
-    document.body.style.touchAction = 'none';
-    applyDomPosition(position.x, position.y);
 
     const onMove = (ev: PointerEvent) => {
       if (!isDraggingRef.current) return;
+
+      if (!dragActiveRef.current) {
+        const dx = ev.clientX - pointerStartRef.current.x;
+        const dy = ev.clientY - pointerStartRef.current.y;
+        if (dx * dx + dy * dy < DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX) return;
+        dragActiveRef.current = true;
+        setIsDragging(true);
+        document.body.style.userSelect = 'none';
+        document.body.style.touchAction = 'none';
+      }
+
       cancelAnimationFrame(dragRafRef.current);
       dragRafRef.current = requestAnimationFrame(() => {
-        applyDomPosition(ev.clientX - dragOffsetRef.current.x, ev.clientY - dragOffsetRef.current.y);
+        setPosition(
+          clampPosition(ev.clientX - dragOffsetRef.current.x, ev.clientY - dragOffsetRef.current.y)
+        );
       });
     };
 
@@ -288,34 +288,30 @@ export function ChatPanel() {
   return (
     <motion.div
       ref={cardRef}
-      layout={!isDragging}
       className="fixed z-50 flex flex-col select-none"
       style={{
-        left: positioned && !isDragging ? position.x : undefined,
-        top: positioned && !isDragging ? position.y : undefined,
+        left: positioned ? position.x : undefined,
+        top: positioned ? position.y : undefined,
         right: positioned ? 'auto' : VIEWPORT_MARGIN,
         bottom: positioned ? 'auto' : VIEWPORT_MARGIN,
-        willChange: isDragging ? 'left, top' : 'auto',
+        transition: isDragging ? 'none' : undefined,
       }}
-      initial={{ opacity: 0, scale: 0.94, y: 14 }}
+      initial={{ opacity: 0, scale: 0.94 }}
       animate={{
         opacity: 1,
         scale: 1,
-        y: 0,
         width: collapsed ? COLLAPSED_WIDTH : PANEL_WIDTH,
         height: collapsed ? 'auto' : PANEL_HEIGHT,
       }}
       transition={isDragging ? { duration: 0 } : panelTransition}
     >
       <motion.div
-        layout={!isDragging}
         className={cn(
           'flex min-h-0 w-full flex-1 flex-col overflow-hidden',
           game?.canJudge && 'ring-2 ring-cyan-500/50 ring-offset-2 ring-offset-transparent'
         )}
-        animate={{ borderRadius: collapsed ? PANEL_RADIUS_COLLAPSED : PANEL_RADIUS_EXPANDED }}
-        transition={isDragging ? { duration: 0 } : panelTransition}
         style={{
+          borderRadius: collapsed ? PANEL_RADIUS_COLLAPSED : PANEL_RADIUS_EXPANDED,
           background: 'rgba(14,14,20,0.97)',
           border: game?.canJudge
             ? '1px solid rgba(34,211,238,0.35)'
