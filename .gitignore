@@ -1,6 +1,15 @@
 # Dependencies
 node_modules
 
+# Python
+server/venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
 # Yarn 4+ (state/cache; not committed)
 .yarn/*
 !.yarn/patches
