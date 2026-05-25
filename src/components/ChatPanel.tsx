@@ -31,6 +31,7 @@ export function ChatPanel() {
   const game = useGameSessionOptional();
   const [collapsed, setCollapsed] = useState(true);
   const [loadingModels, setLoadingModels] = useState(false);
+  const [llmConnected, setLlmConnected] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -115,27 +116,45 @@ export function ChatPanel() {
   }, [input, resizeTextarea]);
 
   useEffect(() => {
-    if (!settings.apiKey.trim() || settings.models.length > 0) return;
     let cancelled = false;
-    setLoadingModels(true);
-    fetchModels(settings.apiKey.trim())
-      .then((list) => {
-        if (cancelled || list.length === 0) return;
+    const apiKey = settings.apiKey.trim();
+    const model = settings.model.trim();
+
+    if (!apiKey || !model) {
+      setLlmConnected(false);
+      setLoadingModels(false);
+      return;
+    }
+
+    const applyList = (list: string[]) => {
+      if (cancelled) return;
+      if (list.length === 0 || !list.includes(model)) {
+        setLlmConnected(false);
+        return;
+      }
+      setLlmConnected(true);
+      if (settings.models.length === 0 || !settings.models.includes(model)) {
         updateSettings({
           models: list,
-          model: settings.model && list.includes(settings.model) ? settings.model : list[0],
+          model: list.includes(model) ? model : list[0],
         });
-      })
+      }
+    };
+
+    setLoadingModels(true);
+    fetchModels(apiKey)
+      .then(applyList)
       .catch(() => {
-        /* 静默失败，用户可在设置中手动获取 */
+        if (!cancelled) setLlmConnected(false);
       })
       .finally(() => {
         if (!cancelled) setLoadingModels(false);
       });
+
     return () => {
       cancelled = true;
     };
-  }, [settings.apiKey, settings.model, settings.models.length, updateSettings]);
+  }, [settings.apiKey, settings.model, settings.models, updateSettings]);
 
   const endDrag = useCallback(
     (clientX: number, clientY: number) => {
@@ -266,6 +285,9 @@ export function ChatPanel() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : '请求失败';
       setError(msg);
+      if (/api\s*key|认证|连接|网络|401|403|fetch/i.test(msg)) {
+        setLlmConnected(false);
+      }
       setMessages((prev) => [
         ...prev.filter((m) => m.id !== assistantId),
         { id: assistantId, role: 'assistant', content: `错误：${msg}` },
@@ -336,9 +358,18 @@ export function ChatPanel() {
           >
             <span
               className={cn(
-                'inline-block h-2 w-2 shrink-0 rounded-full bg-emerald-400 animate-breathe-dot',
-                loading && '[animation-duration:1.2s]'
+                'inline-block h-2 w-2 shrink-0 rounded-full',
+                llmConnected
+                  ? 'bg-emerald-400 animate-breathe-dot'
+                  : 'bg-zinc-500'
               )}
+              title={
+                llmConnected
+                  ? '大模型已连接'
+                  : loadingModels
+                    ? '正在检测大模型连接…'
+                    : '大模型未连接，请在设置中配置 API Key 并获取模型'
+              }
             />
             <span
               className={cn(

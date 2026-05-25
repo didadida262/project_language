@@ -65,18 +65,29 @@ function parseContent(text, fileName) {
       continue;
     }
     
-    // 检测是否是词根行：大写字母 + 冒号/中文冒号
+    // 神话词汇等特殊章节标题
+    if (/^words from mythology$/i.test(trimmed)) {
+      if (currentRoot) roots.push(currentRoot);
+      currentRoot = {
+        root: 'MYTHOLOGY',
+        rootMeaning: 'Words from Mythology',
+        rootNote: null,
+        words: [],
+      };
+      continue;
+    }
+
+    // 检测是否是词根行：大写字母（可含 /） + 冒号/中文冒号
     // 格式 1: BENE: meaning "well"
-    // 格式 2: CRIM: fault or crime
-    // 格式 3: BELL: meaning 'war',Bellona is the roman godness of war...
-    const rootMatch = trimmed.match(/^([A-Z]{2,})\s*[:：]\s*(.+)$/);
+    // 格式 2: DUC/DUCT: to lead
+    const rootMatch = trimmed.match(/^([A-Z][A-Z/]{1,})\s*[:：]\s*(.+)$/);
     if (rootMatch) {
       // 保存上一个词根
       if (currentRoot) {
         roots.push(currentRoot);
       }
       
-      const rootName = rootMatch[1].trim().toUpperCase();
+      const rootName = rootMatch[1].trim().toUpperCase().replace(/\s+/g, '');
       const fullContent = rootMatch[2].trim();
       
       // 提取 meaning 部分
@@ -108,9 +119,9 @@ function parseContent(text, fileName) {
     
     // 检测是否是单词行：短横线 + 空格 + 单词 + 冒号/中文冒号 + 定义
     // 例如：- benediction: well + speaking
-    const wordMatch = trimmed.match(/^-\s*([a-zA-Z]+)\s*[:：]\s*(.+)$/);
+    const wordMatch = trimmed.match(/^-\s*([a-zA-Z][a-zA-Z\s-]*?)\s*[:：]\s*(.+)$/);
     if (wordMatch && currentRoot) {
-      const word = wordMatch[1].trim().toLowerCase();
+      const word = wordMatch[1].trim().toLowerCase().replace(/\s+/g, ' ');
       const definition = wordMatch[2].trim();
       
       // 只添加有效的定义（至少 2 个字符）

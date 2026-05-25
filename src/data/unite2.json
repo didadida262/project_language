@@ -90,5 +90,136 @@
         "definition": "extremely small"
       }
     ]
+  },
+  {
+    "root": "JECT",
+    "rootMeaning": "throw",
+    "rootNote": null,
+    "words": [
+      {
+        "word": "interject",
+        "definition": "to interrupt a conversation"
+      },
+      {
+        "word": "conjecture",
+        "definition": "to guess, together to throw"
+      },
+      {
+        "word": "projection",
+        "definition": "an estimate of what might happen"
+      },
+      {
+        "word": "trajectory",
+        "definition": "\"trans\" meaning across, so we can say the trajectory of bullet"
+      }
+    ]
+  },
+  {
+    "root": "TRACT",
+    "rootMeaning": "drag",
+    "rootNote": null,
+    "words": [
+      {
+        "word": "traction",
+        "definition": "the friction"
+      },
+      {
+        "word": "retract",
+        "definition": "to pull back"
+      },
+      {
+        "word": "protracted",
+        "definition": "continued or extended"
+      },
+      {
+        "word": "intractable",
+        "definition": "not easily handled, led, taught"
+      }
+    ]
+  },
+  {
+    "root": "DUC/DUCT",
+    "rootMeaning": "to lead",
+    "rootNote": null,
+    "words": [
+      {
+        "word": "conducive",
+        "definition": "tending to promote, encourage, or assist"
+      },
+      {
+        "word": "deduction",
+        "definition": "subtraction"
+      },
+      {
+        "word": "induce",
+        "definition": "bring about"
+      },
+      {
+        "word": "seduction",
+        "definition": "attraction or charm"
+      }
+    ]
+  },
+  {
+    "root": "SEQU",
+    "rootMeaning": "to follow",
+    "rootNote": null,
+    "words": [
+      {
+        "word": "sequential",
+        "definition": "arranged in order or in a series"
+      },
+      {
+        "word": "subsequent",
+        "definition": "following in time, subsequent days/years，subsequently(finally)"
+      },
+      {
+        "word": "consequential",
+        "definition": "resulting, important"
+      },
+      {
+        "word": "non sequitur",
+        "definition": "it does not follow"
+      }
+    ]
+  },
+  {
+    "root": "MYTHOLOGY",
+    "rootMeaning": "Words from Mythology",
+    "rootNote": null,
+    "words": [
+      {
+        "word": "apollonian",
+        "definition": "ordered, rational, calm, harmonious, Apollonian style"
+      },
+      {
+        "word": "bacchanalian",
+        "definition": "frenzied(frenzied crowd), orgiastic(frenzied 是情绪发疯狂乱；orgiastic 是肉体 / 感官纵情放纵。), bacchanalian style"
+      },
+      {
+        "word": "delphic",
+        "definition": "unclear, ambiguous, or confusing, delphic comments"
+      },
+      {
+        "word": "dionysian",
+        "definition": "狂热的（哲学层面）"
+      },
+      {
+        "word": "jovial",
+        "definition": "jolly, good-natured, Jove or jupiter , the roman counterpart of greek's zeus,"
+      },
+      {
+        "word": "mercurial",
+        "definition": "having rapid and unpredictable change of mood, mercury(水银)"
+      },
+      {
+        "word": "olympian",
+        "definition": "lofty, superior, and detached"
+      },
+      {
+        "word": "venereal",
+        "definition": "having to do with sexual intercourse or disease transmitted by it, Venus was the roman goddess of love, the equivalent of the Greek Aphrodite(阿佛洛狄忒), venereal disease"
+      }
+    ]
   }
 ]

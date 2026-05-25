@@ -2,7 +2,7 @@ Unite 2
 
 MANIA： meaning 'madness', a mental illness
 - kleptomaniac: a mental illness in which a person has a strong desire to steal things.
-'klepto-' means 'to steal'
+'klepto' means 'to steal'
 - dipsomaniac: a person who has strong desire to drink.'dipso-' means 'thirst'
 - megalomaniac: a mental disorder marked by feelings of great personal power and importance
 - egomaniac: someone who is extremely self-centered and ignores the problems and concerns of others
@@ -26,6 +26,42 @@ FIN: meaning end or boundary
 - definitive: specifying perfectly or precisely
 - finite: having definite limits  | | infinite
 - infinitesimal: extremely small
+
+JECT：meaning "throw" or "hurl"
+- interject: to interrupt a conversation
+- conjecture: to guess, together to throw
+- projection: an estimate of what might happen
+- trajectory: "trans" meaning across, so we can say the trajectory of bullet
+
+TRACT: meaning "drag" or "draw"
+- traction: the friction
+- retract: to pull back
+- protracted: continued or extended
+- intractable: not easily handled, led, taught
+
+DUC/DUCT: to lead
+- conducive: tending to promote, encourage, or assist 
+- deduction: subtraction
+- induce: bring about
+- seduction: attraction or charm
+
+SEQU: to follow
+- sequential: arranged in order or in a series
+- subsequent: following in time, subsequent days/years，subsequently(finally)
+- consequential: resulting, important
+- non sequitur: it does not follow
+
+Words from Mythology
+- Apollonian: ordered, rational, calm, harmonious, Apollonian style
+- bacchanalian: frenzied(frenzied crowd), orgiastic(frenzied 是情绪发疯狂乱；orgiastic 是肉体 / 感官纵情放纵。), bacchanalian style
+- delphic: unclear, ambiguous, or confusing, delphic comments
+- dionysian: 狂热的（哲学层面）
+- jovial: jolly, good-natured, Jove or jupiter , the roman counterpart of greek's zeus, 
+- mercurial: having rapid and unpredictable change of mood, mercury(水银)
+- olympian: lofty, superior, and detached
+- venereal: having to do with sexual intercourse or disease transmitted by it, Venus was the roman goddess of love, the equivalent of the Greek Aphrodite(阿佛洛狄忒), venereal disease
+
+
 
 
 
