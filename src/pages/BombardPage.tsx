@@ -1,10 +1,9 @@
-import { faPlay, faStop } from '@fortawesome/free-solid-svg-icons';
+import { faGlobe, faPlay, faStop } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { FinaleOverlay } from '../components/FinaleOverlay';
-import { RoundPromptBanner } from '../components/RoundPromptBanner';
-import { Scoreboard } from '../components/Scoreboard';
 import { SettingsButton } from '../components/SettingsButton';
 import { MAX_ROUNDS, useGameSession } from '../context/GameSessionContext';
+import { useAppLanguage } from '../context/AppLanguageContext';
 import { useSettingsModal } from '../context/SettingsModalContext';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -54,12 +53,43 @@ function pickRandom(cards: FlatCard[], exclude?: { rootIdx: number; wordIdx: num
   return card;
 }
 
+const BOMBARD_UI = {
+  zh: {
+    titleSuffix: '词根斩',
+    revealAll: '全开',
+    restore: '还原',
+    back: '← 返回',
+    backShort: '←',
+    start: '开始轰炸',
+    stop: '停止轰炸',
+    startShort: '开始',
+    stopShort: '停止',
+    loading: '加载中...',
+    loadingShort: '…',
+  },
+  en: {
+    titleSuffix: 'Root Zhan',
+    revealAll: 'Reveal all',
+    restore: 'Restore',
+    back: '← Back',
+    backShort: '←',
+    start: 'Start Bombard',
+    stop: 'Stop Bombard',
+    startShort: 'Start',
+    stopShort: 'Stop',
+    loading: 'Loading…',
+    loadingShort: '…',
+  },
+} as const;
+
 /* ════════════════════════════════════════
    页面主体
    ════════════════════════════════════════ */
 export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: number }) {
   const reduceMotion = useReducedMotion();
   const { openSettings } = useSettingsModal();
+  const { lang, toggleLang } = useAppLanguage();
+  const ui = BOMBARD_UI[lang];
   const game = useGameSession();
   const roundRef = useRef(0);
   const currentRef = useRef<FlatCard | null>(null);
@@ -287,78 +317,104 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
       <FinaleOverlay />
 
       <header className="relative z-40 sticky top-0 flex flex-col gap-2 border-b border-white/[0.08] bg-zinc-950/70 px-3 py-2.5 backdrop-blur-xl md:px-6 md:py-3">
-        <div className="flex items-center justify-between gap-2">
-        <h1 className="font-display shrink-0 text-sm font-semibold tracking-tight text-white md:text-lg">
-          <span className="hidden md:inline">Unit {unitId} · 词根斩</span>
-          <span className="md:hidden">Unit {unitId}</span>
-        </h1>
-        <div className="flex shrink-0 items-center gap-2 md:gap-4">
-          <button
-            type="button"
-            onClick={toggleTestRevealAll}
-            disabled={loading || cardsCount === 0}
-            title={testRevealAll ? '恢复所有卡片为背面' : '临时测试：翻开全部单词牌'}
-            className={cn(
-              'inline-flex items-center rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors md:px-3 md:py-2 md:text-sm',
-              testRevealAll
-                ? 'border-amber-500/40 bg-amber-950/50 text-amber-300 hover:bg-amber-900/40'
-                : 'border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200',
-              (loading || cardsCount === 0) && 'cursor-not-allowed opacity-50'
-            )}
-          >
-            {testRevealAll ? '还原' : '全开'}
-          </button>
-          <SettingsButton onClick={openSettings} />
-          {/* 返回 */}
-          <button
-            type="button"
-            onClick={onBack}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:bg-white/10 hover:text-zinc-200 md:px-3 md:py-2 md:text-sm"
-          >
-            <span className="hidden sm:inline">← 返回</span>
-            <span className="sm:hidden">←</span>
-          </button>
+        <div className="grid h-11 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 md:h-12">
+          <h1 className="min-w-0 font-display text-sm font-semibold tracking-tight text-white md:text-lg">
+            <span className="hidden md:inline">
+              Unit {unitId} · {ui.titleSuffix}
+            </span>
+            <span className="md:hidden">Unit {unitId}</span>
+          </h1>
 
-          {/* 倒计时 */}
-          <AnimatePresence mode="wait">
-            {running && countdown > 0 ? (
-              <motion.span
-                key="cd"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                className="inline-flex h-9 min-w-[52px] items-center justify-center rounded-lg border border-cyan-500/30 bg-cyan-950/40 px-3 font-mono text-lg font-bold tabular-nums text-cyan-300"
+          <div className="flex h-11 items-center justify-center gap-2.5 md:h-12">
+              <div
+                className={cn(
+                  'flex h-11 shrink-0 items-center justify-center overflow-hidden transition-[width] duration-200 md:h-12',
+                  running ? 'w-[4.75rem] md:w-[5.75rem]' : 'w-0'
+                )}
+                aria-hidden={!running}
               >
-                {countdown}s
-              </motion.span>
-            ) : null}
-          </AnimatePresence>
+                <AnimatePresence mode="wait">
+                  {running && countdown > 0 ? (
+                    <motion.span
+                      key="cd"
+                      initial={{ opacity: 0, scale: 0.92 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.92 }}
+                      className={cn(
+                        'inline-flex h-11 w-full items-center justify-center rounded-xl border',
+                        'border-cyan-400/50 bg-gradient-to-b from-cyan-800/70 to-cyan-950/95',
+                        'font-mono text-xl font-bold tabular-nums tracking-wide text-cyan-50',
+                        'shadow-[0_0_28px_-6px_rgba(34,211,238,0.55)] md:h-12 md:text-2xl'
+                      )}
+                    >
+                      {countdown}s
+                    </motion.span>
+                  ) : null}
+                </AnimatePresence>
+              </div>
+              <button
+                type="button"
+                onClick={toggleRunning}
+                disabled={loading || cardsCount === 0}
+                className={cn(
+                  'inline-flex h-11 min-w-[7.5rem] items-center justify-center gap-2 rounded-xl border px-6',
+                  'text-sm font-semibold tracking-wide transition-all md:h-12 md:min-w-[9.5rem] md:px-10 md:text-base',
+                  running
+                    ? 'border-red-400/50 bg-gradient-to-b from-red-900/80 to-red-950/90 text-red-100 shadow-[0_0_28px_-6px_rgba(248,113,113,0.55)] hover:from-red-800/80 hover:to-red-900/90'
+                    : 'border-emerald-400/50 bg-gradient-to-b from-emerald-800/70 to-emerald-950/90 text-emerald-50 shadow-[0_0_28px_-6px_rgba(52,211,153,0.5)] hover:from-emerald-700/75 hover:to-emerald-900/90',
+                  (loading || cardsCount === 0) && 'cursor-not-allowed opacity-50'
+                )}
+              >
+                <FontAwesomeIcon
+                  icon={running ? faStop : faPlay}
+                  className="h-4 w-4 md:h-[1.125rem] md:w-[1.125rem]"
+                />
+                <span className="hidden sm:inline">
+                  {loading ? ui.loading : running ? ui.stop : ui.start}
+                </span>
+                <span className="sm:hidden">
+                  {loading ? ui.loadingShort : running ? ui.stopShort : ui.startShort}
+                </span>
+              </button>
+          </div>
 
-          {/* 开始 / 停止按钮 */}
-          <button
-            type="button"
-            onClick={toggleRunning}
-            disabled={loading || cardsCount === 0}
-            className={`
-              inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors md:px-4 md:py-2 md:text-sm
-              ${
-                running
-                  ? 'border-red-500/40 bg-red-950/50 text-red-300 hover:bg-red-900/50'
-                  : 'border-emerald-500/40 bg-emerald-950/50 text-emerald-300 hover:bg-emerald-900/50'
-              }
-              ${(loading || cardsCount === 0) ? ' opacity-50 cursor-not-allowed' : ''}
-            `}
-          >
-            <FontAwesomeIcon icon={running ? faStop : faPlay} className="h-3 w-3 md:h-3.5 md:w-3.5" />
-            <span className="hidden sm:inline">{loading ? '加载中...' : running ? '停止' : '开始'}</span>
-            <span className="sm:hidden">{loading ? '…' : running ? '停' : '开'}</span>
-          </button>
+          <div className="flex shrink-0 items-center justify-end gap-2 md:gap-3">
+            <button
+              type="button"
+              onClick={toggleTestRevealAll}
+              disabled={loading || cardsCount === 0}
+              title={testRevealAll ? '恢复所有卡片为背面' : '临时测试：翻开全部单词牌'}
+              className={cn(
+                'inline-flex items-center rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors md:px-3 md:py-2 md:text-sm',
+                testRevealAll
+                  ? 'border-amber-500/40 bg-amber-950/50 text-amber-300 hover:bg-amber-900/40'
+                  : 'border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200',
+                (loading || cardsCount === 0) && 'cursor-not-allowed opacity-50'
+              )}
+            >
+              {testRevealAll ? ui.restore : ui.revealAll}
+            </button>
+            <button
+              type="button"
+              onClick={toggleLang}
+              title={lang === 'zh' ? 'Switch to English' : '切换到中文'}
+              aria-label={lang === 'zh' ? 'Switch to English (EN)' : '切换到中文 (中)'}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-zinc-400 transition-colors hover:border-cyan-500/30 hover:bg-white/10 hover:text-cyan-300"
+            >
+              <FontAwesomeIcon icon={faGlobe} className="h-4 w-4 text-cyan-400" />
+            </button>
+            <SettingsButton onClick={openSettings} />
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:bg-white/10 hover:text-zinc-200 md:px-3 md:py-2 md:text-sm"
+            >
+              <span className="hidden sm:inline">{ui.back}</span>
+              <span className="sm:hidden">{ui.backShort}</span>
+            </button>
+          </div>
         </div>
-        </div>
-        <Scoreboard />
       </header>
-
-      <RoundPromptBanner countdown={countdown} />
 
       {/* ── 主体内容 ── */}
       <main className="relative z-10 mx-auto max-w-6xl space-y-8 px-3 py-5 sm:px-4 sm:py-8 md:space-y-10 md:px-6">

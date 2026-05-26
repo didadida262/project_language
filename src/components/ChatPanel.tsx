@@ -5,13 +5,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useGameSessionOptional } from '../context/GameSessionContext';
 import { useLlmSettings } from '../context/LlmSettingsContext';
 import { fetchModels, sendChatStream, sendJudge, type ChatMessagePayload } from '../lib/api';
+import { Scoreboard } from './Scoreboard';
 import { cn } from '../lib/cn';
 
 const POS_STORAGE_KEY = 'chat-panel-position';
 const VIEWPORT_MARGIN = 20;
+/** 初次加载默认位置：顶栏下方、右侧（与轰炸页顶栏高度对齐） */
+const DEFAULT_COLLAPSED_TOP = 72;
 const PANEL_WIDTH = 380;
 const PANEL_HEIGHT = 480;
-const COLLAPSED_WIDTH = 200;
+const COLLAPSED_WIDTH = 300;
 const COLLAPSED_HEIGHT = 40;
 const PANEL_RADIUS = 12;
 const COLLAPSED_RADIUS = 8;
@@ -25,6 +28,41 @@ interface ChatMessage {
 }
 
 let idCounter = 0;
+
+function ModelTag({
+  model,
+  loading,
+  collapsed,
+}: {
+  model: string;
+  loading: boolean;
+  collapsed: boolean;
+}) {
+  const label = loading ? '检测中' : model.trim() || '未配置';
+  const title = model.trim()
+    ? `当前模型：${model}（在设置中切换）`
+    : '请在设置中配置并选择模型';
+
+  return (
+    <span
+      className={cn(
+        'inline-flex min-w-0 shrink items-center gap-1.5 rounded-md border',
+        'border-cyan-400/25 bg-gradient-to-r from-cyan-500/[0.12] via-indigo-500/10 to-violet-500/[0.12]',
+        'font-mono font-medium text-cyan-100/90',
+        'shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_0_18px_-6px_rgba(34,211,238,0.45)]',
+        'ml-auto backdrop-blur-sm',
+        collapsed ? 'max-w-[9.5rem] px-2 py-1 text-xs' : 'max-w-[12rem] px-2.5 py-1 text-sm'
+      )}
+      title={title}
+    >
+      <span className="relative flex h-2 w-2 shrink-0" aria-hidden>
+        <span className="absolute inset-0 rounded-full bg-cyan-400/50 animate-ping" />
+        <span className="relative h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.85)]" />
+      </span>
+      <span className="truncate leading-tight">{label}</span>
+    </span>
+  );
+}
 
 export function ChatPanel() {
   const { settings, updateSettings } = useLlmSettings();
@@ -90,8 +128,8 @@ export function ChatPanel() {
     setPosition(
       clampPositionForCollapsed(
         window.innerWidth - COLLAPSED_WIDTH - VIEWPORT_MARGIN,
-        window.innerHeight - COLLAPSED_HEIGHT - VIEWPORT_MARGIN,
-        true
+        DEFAULT_COLLAPSED_TOP,
+        collapsed
       )
     );
   }, [clampPositionForCollapsed, collapsed]);
@@ -346,14 +384,22 @@ export function ChatPanel() {
   return (
     <motion.div
       ref={cardRef}
-      className="fixed z-50 flex flex-col overflow-hidden select-none"
+      className={cn(
+        'fixed z-50 flex flex-col overflow-hidden select-none',
+        'border border-white/[0.14]',
+        'bg-gradient-to-br from-zinc-800 via-zinc-900 to-slate-950',
+        !collapsed && game?.canJudge && 'border-cyan-400/50'
+      )}
       style={{
         left: positioned ? position.x : undefined,
-        top: positioned ? position.y : undefined,
+        top: positioned ? position.y : DEFAULT_COLLAPSED_TOP,
         right: positioned ? 'auto' : VIEWPORT_MARGIN,
-        bottom: positioned ? 'auto' : VIEWPORT_MARGIN,
+        bottom: positioned ? 'auto' : undefined,
         borderRadius: collapsed ? COLLAPSED_RADIUS : PANEL_RADIUS,
         transition: isDragging ? 'none' : undefined,
+        boxShadow: game?.canJudge
+          ? '0 24px 56px -16px rgba(0,0,0,0.72), 0 0 0 1px rgba(34,211,238,0.4), 0 0 32px -10px rgba(34,211,238,0.35)'
+          : '0 24px 56px -16px rgba(0,0,0,0.68), 0 0 0 1px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.06)',
       }}
       initial={{ opacity: 0, scale: 0.94 }}
       animate={{
@@ -368,82 +414,44 @@ export function ChatPanel() {
         setPosition((p) => (p ? clampPosition(p.x, p.y) : p));
       }}
     >
-      <div
-        className={cn(
-          'flex h-full min-h-0 w-full flex-col overflow-hidden',
-          !collapsed &&
-            game?.canJudge &&
-            'ring-2 ring-cyan-500/50 ring-offset-2 ring-offset-transparent'
-        )}
-        style={{
-          background: 'rgba(14,14,20,0.97)',
-          boxShadow: game?.canJudge
-            ? '0 0 0 1px rgba(34,211,238,0.35), 0 0 40px -8px rgba(34,211,238,0.45)'
-            : '0 0 0 1px rgba(255,255,255,0.12), 0 8px 40px rgba(0,0,0,0.45)',
-          backdropFilter: 'blur(20px)',
-        }}
-      >
+      <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
         <div
           className={cn(
-            'flex h-10 shrink-0 items-center justify-between gap-2 px-3',
-            !collapsed && 'border-b border-white/[0.07]'
+            'flex h-10 shrink-0 items-center gap-2 px-2.5',
+            !collapsed && 'border-b border-white/[0.1] bg-white/[0.03]'
           )}
+          style={{ cursor: loading ? 'default' : isDragging ? 'grabbing' : 'grab' }}
+          onPointerDown={handleDragStart}
+          title="拖动移动"
         >
-          <div
-            className="flex min-w-0 flex-1 items-center gap-2.5"
-            style={{ cursor: loading ? 'default' : isDragging ? 'grabbing' : 'grab' }}
-            onPointerDown={handleDragStart}
-            title="拖动移动"
+          <span
+            className={cn(
+              'inline-block h-2 w-2 shrink-0 rounded-full',
+              llmConnected
+                ? 'bg-emerald-400 animate-breathe-dot'
+                : 'bg-zinc-500'
+            )}
+            title={
+              llmConnected
+                ? '大模型已连接'
+                : loadingModels
+                  ? '正在检测大模型连接…'
+                  : '大模型未连接，请在设置中配置 API Key 并获取模型'
+            }
+          />
+          <span
+            className={cn(
+              'shrink-0 font-medium text-white/85',
+              collapsed ? 'text-sm tracking-wide' : 'text-xs'
+            )}
           >
-            <span
-              className={cn(
-                'inline-block h-2 w-2 shrink-0 rounded-full',
-                llmConnected
-                  ? 'bg-emerald-400 animate-breathe-dot'
-                  : 'bg-zinc-500'
-              )}
-              title={
-                llmConnected
-                  ? '大模型已连接'
-                  : loadingModels
-                    ? '正在检测大模型连接…'
-                    : '大模型未连接，请在设置中配置 API Key 并获取模型'
-              }
-            />
-            <span
-              className={cn(
-                'font-medium text-white/85',
-                collapsed ? 'text-sm tracking-wide' : 'truncate text-xs'
-              )}
-            >
-              判官
-            </span>
-          </div>
-          {!collapsed && (
-            <select
-              value={settings.model}
-              onChange={(e) => updateSettings({ model: e.target.value })}
-              disabled={loading || loadingModels || settings.models.length === 0}
-              title="切换模型"
-              onPointerDown={(e) => e.stopPropagation()}
-              className="h-7 max-w-[140px] shrink-0 rounded-lg border border-white/10 bg-white/5 px-2 text-[11px] text-white/80 outline-none focus:border-cyan-500/40 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {settings.models.length === 0 ? (
-                <option value="">{loadingModels ? '加载中' : '未配置'}</option>
-              ) : (
-                settings.models.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))
-              )}
-              {settings.model &&
-                settings.models.length > 0 &&
-                !settings.models.includes(settings.model) && (
-                  <option value={settings.model}>{settings.model}</option>
-                )}
-            </select>
-          )}
+            判官
+          </span>
+          <ModelTag
+            model={settings.model}
+            loading={loadingModels}
+            collapsed={collapsed}
+          />
           <button
             type="button"
             aria-label={collapsed ? '展开判官' : '收起判官'}
@@ -476,6 +484,7 @@ export function ChatPanel() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
             >
+              <Scoreboard embedded />
               <div
                 ref={scrollRef}
                 className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-3"
@@ -498,11 +507,11 @@ export function ChatPanel() {
                           background:
                             msg.role === 'user'
                               ? 'linear-gradient(135deg, #4f46e5, #6366f1)'
-                              : 'rgba(255,255,255,0.06)',
+                              : 'rgba(255,255,255,0.09)',
                           color: msg.role === 'user' ? '#fff' : 'rgba(255,255,255,0.9)',
                           border:
                             msg.role === 'assistant'
-                              ? '1px solid rgba(255,255,255,0.08)'
+                              ? '1px solid rgba(255,255,255,0.12)'
                               : 'none',
                         }}
                       >

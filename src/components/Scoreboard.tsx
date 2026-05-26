@@ -1,17 +1,26 @@
 import { motion } from 'framer-motion';
-import { useGameSession } from '../context/GameSessionContext';
+import { useGameSessionOptional } from '../context/GameSessionContext';
 import { cn } from '../lib/cn';
 
-export function Scoreboard() {
-  const { active, round, maxRounds, correct, wrong, lastVerdict } = useGameSession();
+type ScoreboardProps = {
+  /** 嵌入判官面板内 */
+  embedded?: boolean;
+};
 
-  if (!active) return null;
+export function Scoreboard({ embedded = false }: ScoreboardProps) {
+  const game = useGameSessionOptional();
+  if (!game?.active) return null;
+
+  const { round, maxRounds, correct, wrong, lastVerdict } = game;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -8 }}
+      initial={{ opacity: 0, y: embedded ? 4 : -8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-wrap items-center gap-2"
+      className={cn(
+        'flex flex-wrap items-center gap-2',
+        embedded && 'shrink-0 border-b border-white/[0.08] bg-white/[0.03] px-3 py-2'
+      )}
     >
       <span className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-zinc-400">
         第 <span className="font-mono text-cyan-300">{round}</span>/{maxRounds} 轮

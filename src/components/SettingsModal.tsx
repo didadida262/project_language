@@ -1,7 +1,7 @@
 import { faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { DEFAULT_BASE_URL, useLlmSettings, type LlmSettings } from '../context/LlmSettingsContext';
 import { fetchModels } from '../lib/api';
 import { cn } from '../lib/cn';
@@ -25,6 +25,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   const [models, setModels] = useState<string[]>([]);
   const [loadingModels, setLoadingModels] = useState(false);
   const [error, setError] = useState('');
+  const modelListRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -91,13 +92,28 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
     }
   }, [draft.apiKey, draft.model]);
 
-  const displayModels = (() => {
+  const displayModels = useMemo(() => {
     const list = models.length > 0 ? models : draft.models;
     if (draft.model && !list.includes(draft.model)) {
       return [draft.model, ...list];
     }
     return list;
-  })();
+  }, [models, draft.models, draft.model]);
+
+  const scrollToSelectedModel = useCallback(() => {
+    const list = modelListRef.current;
+    if (!list || !draft.model.trim()) return;
+    const selected = list.querySelector<HTMLElement>('[data-selected-model="true"]');
+    selected?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [draft.model]);
+
+  useEffect(() => {
+    if (!open || loadingModels || displayModels.length === 0 || !draft.model.trim()) {
+      return;
+    }
+    const timer = window.setTimeout(scrollToSelectedModel, 220);
+    return () => window.clearTimeout(timer);
+  }, [open, loadingModels, displayModels, draft.model, scrollToSelectedModel]);
 
   const handleSave = () => {
     if (!draft.apiKey.trim()) {
@@ -195,13 +211,17 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                   点击「获取模型列表」加载可用模型
                 </p>
               ) : (
-                <ul className="max-h-56 divide-y divide-white/[0.08] overflow-y-auto rounded-lg border border-white/10 bg-white/[0.03]">
+                <ul
+                  ref={modelListRef}
+                  className="max-h-56 divide-y divide-white/[0.08] overflow-y-auto rounded-lg border border-white/10 bg-white/[0.03]"
+                >
                   {displayModels.map((m) => {
                     const selected = draft.model === m;
                     return (
                       <li key={m}>
                         <button
                           type="button"
+                          data-selected-model={selected ? 'true' : undefined}
                           onClick={() => setDraft((d) => ({ ...d, model: m }))}
                           className={cn(
                             'w-full px-3 py-2.5 text-left text-sm leading-snug break-all transition-colors',
