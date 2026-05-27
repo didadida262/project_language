@@ -37,6 +37,10 @@ yarn dev
 
 本项目使用 `@cloudflare/vite-plugin`，构建后静态资源在 `dist/client/`，Worker 在 `dist/english_root_zhan/`。**不要**只把 `dist` 当纯静态目录部署（会导致 `/assets/*` 404、白屏）。
 
+### 整站 404 时
+
+见 [docs/DEPLOY-RECOVERY.md](docs/DEPLOY-RECOVERY.md)：先在 Deployments **回滚**，再按下面二选一配置。
+
 ### 方式 A：Dashboard（Git 自动部署）⚠️ 必读
 
 `vite build` 后前端在 **`dist/client/`**，不在 `dist/` 根目录。若 Output 填成 `dist`，线上会一直跑**旧 JS**（仍请求 `/api/models`、仍有 Base URL 输入框）。
@@ -45,8 +49,8 @@ yarn dev
 
 | 配置项 | 正确值 | 错误示例 |
 |--------|--------|----------|
-| **Build command** | `yarn build && npx wrangler deploy` | 只有 `yarn build`（Worker/API 不会更新） |
-| **Build output directory** | **`dist/client`** 或留空（以 wrangler deploy 为准） | **`dist`**（会 404 或继续用旧包） |
+| **Build command** | 先救站：`yarn build:pages`；要 API：`yarn build:cf` + Token | `yarn build && wrangler deploy` 但没 Token / Output 填错 |
+| **Build output directory** | 用 `build:pages` 时填 **`dist/client`**；用 `build:cf` 时**留空** | **`dist`** 或 `build:cf` 时又填 `dist/client`（易全站 404） |
 
 部署后自检：打开首页 → F12 → 看 JS 文件名应是 **`index-BqyeXQGv.js`** 这类新 hash，且 Network 里模型列表请求域名是 **`aiplatform.njsrd.com`**，不是 `mileswang262.com/api/models`。
 
