@@ -22,6 +22,9 @@ __pycache__/
 # Build
 dist
 dist-ssr
+# publish-dist-to-root 仅在 CI 写入，勿提交
+/assets/
+
 *.local
 
 # Electron

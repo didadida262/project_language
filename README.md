@@ -50,7 +50,7 @@ yarn dev
 | 配置项 | 正确值 | 错误示例 |
 |--------|--------|----------|
 | **Build command** | 先救站：`yarn build:pages`；要 API：`yarn build:cf` + Token | 只 `vite build` 不 sync / Token 缺失 |
-| **Build output directory** | 用 `build:pages` 时填 **`dist`**（脚本会同步 client 到根目录） | 只填 **`dist/client`**（易整站 404） |
+| **Build output directory** | 界面若是 **`/`** 且不能改：保持 `/`，用 `yarn build:pages` 或 `yarn build:cf`（脚本会发布到根目录） | 只跑 `vite build` 不 publish → 白屏 |
 
 部署后自检：打开首页 → F12 → 看 JS 文件名应是 **`index-BqyeXQGv.js`** 这类新 hash，且 Network 里模型列表请求域名是 **`aiplatform.njsrd.com`**，不是 `mileswang262.com/api/models`。
 

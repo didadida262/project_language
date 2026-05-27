@@ -55,7 +55,9 @@ AI `/api` 暂时不可用，但首页不会 404。
 yarn build:cf
 ```
 
-**Build output directory：** 留空
+**Build output directory：** 若界面固定为 **`/`** 无法修改——可以保留 `/`，但必须用下面的 build 命令（会把 `dist/` 复制到根目录再发布）。
+
+> ⚠️ 若 **没有** 跑 `publish-dist-to-root`，`/` 会发布 Git 里的开发版 `index.html`（含 `/src/main.tsx`）→ 白屏 / MIME 报错。
 
 **Environment variables（Production + Preview）：**
 
