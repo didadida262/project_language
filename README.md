@@ -5,11 +5,13 @@
 ## 架构
 
 ```
-前端 (React)  →  Cloudflare Worker (/api)  →  LangChain  →  大模型 (OpenAI 兼容 API)
+前端 (React)  →  模型列表直连第三方
+              →  对话/阅卷走 Cloudflare Worker (/api Agent)
+              →  Agent 调用写死的 LLM 补全接口
 ```
 
-- **前端**：聊天面板、大模型设置（Base URL / API Key / 模型）
-- **API**：`worker/` 下的 TypeScript Worker（Hono + LangChain）
+- **前端**：设置 API Key / 模型；模型列表直连 `aiplatform.njsrd.com`
+- **Agent（/api）**：判官人设、流式对话、阅卷；内部固定调用 `https://aiplatform.njsrd.com/llm/v1`
 - **部署**：Cloudflare Pages 构建 `dist` + Worker（`run_worker_first` 处理 `/api/*`），无需 Docker / 独立后端服务器
 
 ## 本地开发
@@ -28,8 +30,8 @@ yarn dev
 
 | 项 | 默认值 |
 |----|--------|
-| Base URL | `https://aiplatform.njsrd.com/llm/v1` |
-| 模型列表接口 | `https://aiplatform.njsrd.com/nexus/api/api-keys/models` |
+| 模型列表（前端直连） | `https://aiplatform.njsrd.com/nexus/api/api-keys/models` |
+| LLM 补全（仅 Agent） | `https://aiplatform.njsrd.com/llm/v1` |
 
 ## 部署到 Cloudflare
 
@@ -97,7 +99,6 @@ yarn build:check
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/api/health` | 健康检查 |
-| GET | `/api/models?api_key=...` | 代理获取可用模型列表 |
-| POST | `/api/chat/stream` | SSE 流式对话（推荐） |
+| POST | `/api/chat/stream` | SSE 流式对话（推荐，Agent） |
 | POST | `/api/chat` | 非流式对话 |
 | POST | `/api/judge` | 阅卷评判 |

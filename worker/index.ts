@@ -2,31 +2,12 @@ import { Hono } from 'hono';
 
 import { runChat, streamChat } from './lib/chat';
 import { runJudge } from './lib/judge';
-import { fetchModels } from './lib/models';
-import {
-  type ChatRequest,
-  type JudgeRequest,
-  DEFAULT_BASE_URL,
-} from './lib/types';
+import { type ChatRequest, type JudgeRequest } from './lib/types';
 import { validateChatFields } from './lib/validate';
 
 const app = new Hono().basePath('/api');
 
 app.get('/health', (c) => c.json({ status: 'ok' }));
-
-app.get('/models', async (c) => {
-  const apiKey = c.req.query('api_key');
-  if (!apiKey?.trim()) {
-    return c.json({ detail: 'api_key 不能为空' }, 400);
-  }
-  try {
-    const { models, raw } = await fetchModels(apiKey.trim());
-    return c.json({ models, raw });
-  } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    return c.json({ detail: message }, 502);
-  }
-});
 
 app.post('/judge', async (c) => {
   const req = await c.req.json<JudgeRequest>();
@@ -44,7 +25,6 @@ app.post('/judge', async (c) => {
       req.root.trim(),
       req.root_meaning.trim(),
       req.user_explanation.trim(),
-      req.base_url?.trim() || DEFAULT_BASE_URL,
       req.api_key.trim(),
       req.model.trim()
     );
@@ -72,7 +52,6 @@ app.post('/chat/stream', async (c) => {
         for await (const delta of streamChat(
           req.message.trim(),
           req.history ?? [],
-          req.base_url?.trim() || DEFAULT_BASE_URL,
           req.api_key.trim(),
           req.model.trim()
         )) {
@@ -107,7 +86,6 @@ app.post('/chat', async (c) => {
     const reply = await runChat(
       req.message.trim(),
       req.history ?? [],
-      req.base_url?.trim() || DEFAULT_BASE_URL,
       req.api_key.trim(),
       req.model.trim()
     );

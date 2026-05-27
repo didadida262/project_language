@@ -9,6 +9,7 @@ import { ChatOpenAI } from '@langchain/openai';
 import { SYSTEM_PROMPT } from './persona';
 import { stripThinkContent } from './sanitize';
 import type { ChatMessage } from './types';
+import { LLM_BASE_URL } from './types';
 
 function buildMessages(userMessage: string, history: ChatMessage[]): BaseMessage[] {
   const messages: BaseMessage[] = [new SystemMessage(SYSTEM_PROMPT)];
@@ -23,11 +24,11 @@ function buildMessages(userMessage: string, history: ChatMessage[]): BaseMessage
   return messages;
 }
 
-function createLlm(baseUrl: string, apiKey: string, model: string) {
+function createLlm(apiKey: string, model: string) {
   return new ChatOpenAI({
     model,
     apiKey,
-    configuration: { baseURL: baseUrl.replace(/\/$/, '') },
+    configuration: { baseURL: LLM_BASE_URL.replace(/\/$/, '') },
   });
 }
 
@@ -51,11 +52,10 @@ function chunkText(chunk: { content: unknown }): string {
 export async function runChat(
   message: string,
   history: ChatMessage[],
-  baseUrl: string,
   apiKey: string,
   model: string
 ): Promise<string> {
-  const llm = createLlm(baseUrl, apiKey, model);
+  const llm = createLlm(apiKey, model);
   const messages = buildMessages(message, history);
   const response = await llm.invoke(messages);
   const content =
@@ -68,11 +68,10 @@ export async function runChat(
 export async function* streamChat(
   message: string,
   history: ChatMessage[],
-  baseUrl: string,
   apiKey: string,
   model: string
 ): AsyncGenerator<string> {
-  const llm = createLlm(baseUrl, apiKey, model);
+  const llm = createLlm(apiKey, model);
   const messages = buildMessages(message, history);
   let accumulated = '';
   let visiblePrev = '';

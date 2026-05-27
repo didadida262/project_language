@@ -2,7 +2,8 @@ import { faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { DEFAULT_BASE_URL, useLlmSettings, type LlmSettings } from '../context/LlmSettingsContext';
+import { useLlmSettings, type LlmSettings } from '../context/LlmSettingsContext';
+import { LLM_BASE_URL, MODELS_API_URL } from '../lib/llmEndpoints';
 import { fetchModels } from '../lib/api';
 import { cn } from '../lib/cn';
 
@@ -125,7 +126,6 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
       return;
     }
     saveSettings({
-      baseUrl: draft.baseUrl.trim() || DEFAULT_BASE_URL,
       apiKey: draft.apiKey.trim(),
       model: draft.model.trim(),
       models: models.length > 0 ? models : draft.models,
@@ -158,16 +158,12 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
             <section className="mb-5">
               <SectionTitle>基础配置</SectionTitle>
               <div className="space-y-3">
-                <label className="block">
-                  <span className="mb-1 block text-xs text-zinc-400">Base URL</span>
-                  <input
-                    type="url"
-                    value={draft.baseUrl}
-                    onChange={(e) => setDraft((d) => ({ ...d, baseUrl: e.target.value }))}
-                    placeholder={DEFAULT_BASE_URL}
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-cyan-500/40"
-                  />
-                </label>
+                <p className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-[11px] leading-relaxed text-zinc-500">
+                  模型列表：
+                  <span className="block truncate text-zinc-400">{MODELS_API_URL}</span>
+                  对话补全（Agent 调用）：
+                  <span className="block truncate text-zinc-400">{LLM_BASE_URL}</span>
+                </p>
 
                 <label className="block">
                   <span className="mb-1 block text-xs text-zinc-400">API Key</span>

@@ -5,7 +5,6 @@ export interface ChatMessage {
 
 export interface ChatRequest {
   message: string;
-  base_url?: string;
   api_key: string;
   model: string;
   history?: ChatMessage[];
@@ -17,11 +16,9 @@ export interface JudgeRequest {
   root: string;
   root_meaning: string;
   user_explanation: string;
-  base_url?: string;
   api_key: string;
   model: string;
 }
 
-export const DEFAULT_BASE_URL = 'https://aiplatform.njsrd.com/llm/v1';
-export const MODELS_API_URL =
-  'https://aiplatform.njsrd.com/nexus/api/api-keys/models';
+/** 第三方大模型补全（写死，仅 Agent 层调用） */
+export const LLM_BASE_URL = 'https://aiplatform.njsrd.com/llm/v1';

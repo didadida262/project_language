@@ -1,4 +1,6 @@
 import type { LlmSettings } from '../context/LlmSettingsContext';
+import { MODELS_API_URL } from './llmEndpoints';
+import { parseModelsPayload } from './parseModels';
 
 const API_BASE = '/api';
 
@@ -20,15 +22,25 @@ export interface JudgeResult {
   feedback: string;
 }
 
+/** 模型列表：直连第三方，不经本站 /api */
 export async function fetchModels(apiKey: string): Promise<string[]> {
-  const params = new URLSearchParams({ api_key: apiKey });
-  const res = await fetch(`${API_BASE}/models?${params}`);
+  const url = new URL(MODELS_API_URL);
+  url.searchParams.set('api_key', apiKey);
+
+  const res = await fetch(url.toString());
   if (!res.ok) {
-    const detail = await res.text().catch(() => '');
+    let detail = await res.text().catch(() => '');
+    try {
+      const body = (await res.json()) as { detail?: string };
+      detail = body.detail ?? detail;
+    } catch {
+      /* use raw text */
+    }
     throw new Error(detail || `获取模型列表失败 (${res.status})`);
   }
-  const data = (await res.json()) as { models?: string[] };
-  return data.models ?? [];
+
+  const payload: unknown = await res.json();
+  return parseModelsPayload(payload);
 }
 
 function parseSsePayload(line: string): { content?: string; error?: string } | null {
@@ -42,6 +54,7 @@ function parseSsePayload(line: string): { content?: string; error?: string } | n
   }
 }
 
+/** 对话：走本站 Agent（/api），由后端调用写死的 LLM 接口 */
 export async function sendChatStream(
   message: string,
   history: ChatMessagePayload[],
@@ -55,7 +68,6 @@ export async function sendChatStream(
     body: JSON.stringify({
       message,
       history,
-      base_url: settings.baseUrl,
       api_key: settings.apiKey,
       model: settings.model,
     }),
@@ -98,6 +110,7 @@ export async function sendChatStream(
   }
 }
 
+/** 阅卷：走本站 Agent（/api） */
 export async function sendJudge(
   payload: JudgePayload,
   settings: LlmSettings
@@ -111,7 +124,6 @@ export async function sendJudge(
       root: payload.root,
       root_meaning: payload.rootMeaning,
       user_explanation: payload.userExplanation,
-      base_url: settings.baseUrl,
       api_key: settings.apiKey,
       model: settings.model,
     }),
@@ -144,7 +156,6 @@ export async function sendChat(
     body: JSON.stringify({
       message,
       history,
-      base_url: settings.baseUrl,
       api_key: settings.apiKey,
       model: settings.model,
     }),

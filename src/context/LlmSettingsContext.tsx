@@ -7,11 +7,9 @@ import {
   type ReactNode,
 } from 'react';
 
-export const DEFAULT_BASE_URL = 'https://aiplatform.njsrd.com/llm/v1';
 const STORAGE_KEY = 'llm-settings';
 
 export interface LlmSettings {
-  baseUrl: string;
   apiKey: string;
   model: string;
   models: string[];
@@ -24,7 +22,6 @@ interface LlmSettingsContextValue {
 }
 
 const defaultSettings: LlmSettings = {
-  baseUrl: DEFAULT_BASE_URL,
   apiKey: '',
   model: '',
   models: [],
@@ -36,7 +33,6 @@ function loadSettings(): LlmSettings {
     if (!raw) return defaultSettings;
     const parsed = JSON.parse(raw) as Partial<LlmSettings>;
     return {
-      baseUrl: parsed.baseUrl || DEFAULT_BASE_URL,
       apiKey: parsed.apiKey || '',
       model: parsed.model || '',
       models: Array.isArray(parsed.models) ? parsed.models : [],

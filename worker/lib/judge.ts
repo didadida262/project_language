@@ -2,6 +2,7 @@ import { ChatOpenAI } from '@langchain/openai';
 import { z } from 'zod';
 
 import { JUDGE_SYSTEM } from './persona';
+import { LLM_BASE_URL } from './types';
 
 const JudgeVerdictSchema = z.object({
   verdict: z.string().describe('只能填写「正确」或「错误」'),
@@ -23,14 +24,13 @@ export async function runJudge(
   root: string,
   rootMeaning: string,
   userExplanation: string,
-  baseUrl: string,
   apiKey: string,
   model: string
 ): Promise<{ verdict: '正确' | '错误'; feedback: string }> {
   const llm = new ChatOpenAI({
     model,
     apiKey,
-    configuration: { baseURL: baseUrl.replace(/\/$/, '') },
+    configuration: { baseURL: LLM_BASE_URL.replace(/\/$/, '') },
   }).withStructuredOutput(JudgeVerdictSchema);
 
   const prompt = `请评判以下作答：
