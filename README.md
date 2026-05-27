@@ -31,18 +31,38 @@ yarn dev
 | Base URL | `https://aiplatform.njsrd.com/llm/v1` |
 | 模型列表接口 | `https://aiplatform.njsrd.com/nexus/api/api-keys/models` |
 
-## 部署到 Cloudflare Pages
+## 部署到 Cloudflare
 
-1. 在 Cloudflare Dashboard 连接本仓库
-2. **Build command**：`yarn build`
-3. **Build output directory**：`dist`
-4. `wrangler.toml` 已配置 `run_worker_first = ["/api/*"]`，API 与静态资源同域部署
+本项目使用 `@cloudflare/vite-plugin`，构建后静态资源在 `dist/client/`，Worker 在 `dist/english_root_zhan/`。**不要**只把 `dist` 当纯静态目录部署（会导致 `/assets/*` 404、白屏）。
 
-或使用 CLI：
+### 方式 A：Dashboard（Git 自动部署）
+
+在 Cloudflare → **Workers & Pages** → 你的项目 → **Settings** → **Builds**：
+
+| 配置项 | 值 |
+|--------|-----|
+| **Build command** | `yarn build && npx wrangler deploy` |
+| **Build output directory** | 留空，或填 `dist/client`（若必须填；以 wrangler deploy 为准） |
+
+并在 **Settings → Environment variables** 中配置（Build 用）：
+
+| 变量 | 说明 |
+|------|------|
+| `CLOUDFLARE_API_TOKEN` | [创建 API Token](https://dash.cloudflare.com/profile/api-tokens)，权限含 Account / Workers Scripts / Edit |
+| `CLOUDFLARE_ACCOUNT_ID` | 账户概览页右侧 Account ID |
+
+`NODE_VERSION` = `20`（建议）
+
+部署完成后访问 `https://你的域名/api/health` 应返回 `{"status":"ok"}`。
+
+### 方式 B：本机 CLI
 
 ```bash
+npx wrangler login
 yarn deploy
 ```
+
+`yarn deploy` = `vite build` + `wrangler deploy`（前端 + `/api` Worker 一起发布）。
 
 ## 目录结构
 
