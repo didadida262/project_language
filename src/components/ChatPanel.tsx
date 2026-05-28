@@ -12,6 +12,10 @@ const POS_STORAGE_KEY = 'chat-panel-position';
 const VIEWPORT_MARGIN = 20;
 const MOBILE_INSET = 8;
 const MOBILE_BREAKPOINT = 768;
+const MOBILE_COLLAPSED_WIDTH = 240;
+const MOBILE_EXPANDED_WIDTH = `calc(100vw - ${MOBILE_INSET * 2}px)`;
+const MOBILE_EXPANDED_MIN_HEIGHT = 220;
+const MOBILE_EXPANDED_MAX_HEIGHT = 320;
 /** 初次加载默认位置：顶栏下方、右侧（与轰炸页顶栏高度对齐） */
 const DEFAULT_COLLAPSED_TOP = 72;
 const PANEL_WIDTH = 380;
@@ -83,7 +87,10 @@ export function ChatPanel() {
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [mobileExpandedHeight, setMobileExpandedHeight] = useState(() =>
-    Math.max(300, Math.min(Math.round(window.innerHeight * 0.62), 520))
+    Math.max(
+      MOBILE_EXPANDED_MIN_HEIGHT,
+      Math.min(Math.round(window.innerHeight * 0.42), MOBILE_EXPANDED_MAX_HEIGHT)
+    )
   );
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -156,7 +163,10 @@ export function ChatPanel() {
       const mobile = window.innerWidth <= MOBILE_BREAKPOINT;
       setIsMobile(mobile);
       setMobileExpandedHeight(
-        Math.max(300, Math.min(Math.round(window.innerHeight * 0.62), 520))
+        Math.max(
+          MOBILE_EXPANDED_MIN_HEIGHT,
+          Math.min(Math.round(window.innerHeight * 0.42), MOBILE_EXPANDED_MAX_HEIGHT)
+        )
       );
       setPosition((p) => (p ? clampPosition(p.x, p.y) : p));
     };
@@ -181,8 +191,14 @@ export function ChatPanel() {
   useEffect(() => {
     if (game?.active) {
       setCollapsed(false);
+      if (isMobile) {
+        // 移动端开始轰炸时强制回到底部锚点，并清理历史拖拽坐标
+        localStorage.removeItem(POS_STORAGE_KEY);
+        setPosition(null);
+        requestAnimationFrame(() => setPosition(null));
+      }
     }
-  }, [game?.active]);
+  }, [game?.active, isMobile]);
 
   const showJudgeInputPrompt = !collapsed && !!game?.canJudge;
 
@@ -292,6 +308,7 @@ export function ChatPanel() {
 
     const onMove = (ev: PointerEvent) => {
       if (!isDraggingRef.current) return;
+      if (ev.cancelable) ev.preventDefault();
 
       if (!dragActiveRef.current) {
         const dx = ev.clientX - pointerStartRef.current.x;
@@ -313,7 +330,7 @@ export function ChatPanel() {
 
     const onUp = (ev: PointerEvent) => endDrag(ev.clientX, ev.clientY);
 
-    window.addEventListener('pointermove', onMove, { passive: true });
+    window.addEventListener('pointermove', onMove, { passive: false });
     window.addEventListener('pointerup', onUp);
     window.addEventListener('pointercancel', onUp);
 
@@ -419,7 +436,9 @@ export function ChatPanel() {
 
   const positioned = position !== null;
   const canSend = input.trim().length > 0 && !loading;
-  const panelWidth = isMobile ? `calc(100vw - ${MOBILE_INSET * 2}px)` : (collapsed ? COLLAPSED_WIDTH : PANEL_WIDTH);
+  const panelWidth = isMobile
+    ? (collapsed ? MOBILE_COLLAPSED_WIDTH : MOBILE_EXPANDED_WIDTH)
+    : (collapsed ? COLLAPSED_WIDTH : PANEL_WIDTH);
   const panelHeight = isMobile
     ? (collapsed ? COLLAPSED_HEIGHT : mobileExpandedHeight)
     : (collapsed ? COLLAPSED_HEIGHT : PANEL_HEIGHT);
@@ -463,7 +482,10 @@ export function ChatPanel() {
             'flex h-10 shrink-0 items-center gap-2 px-2.5',
             !collapsed && 'border-b border-white/[0.1] bg-white/[0.03]'
           )}
-          style={{ cursor: isMobile ? 'default' : (loading ? 'default' : isDragging ? 'grabbing' : 'grab') }}
+          style={{
+            cursor: isMobile ? 'default' : (loading ? 'default' : isDragging ? 'grabbing' : 'grab'),
+            touchAction: 'none',
+          }}
           onPointerDown={handleDragStart}
           title={isMobile ? '判官面板' : '拖动移动'}
         >

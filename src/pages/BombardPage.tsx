@@ -415,6 +415,21 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
           <div className="flex shrink-0 items-center justify-end gap-2 md:gap-3">
             <button
               type="button"
+              onClick={toggleTestRevealAll}
+              disabled={loading || cardsCount === 0}
+              title={testRevealAll ? '恢复所有卡片为背面' : '临时测试：翻开全部单词牌'}
+              className={cn(
+                'inline-flex h-9 min-w-[3rem] items-center justify-center rounded-lg border px-2.5 text-xs font-medium transition-colors md:h-10 md:px-3 md:text-sm',
+                testRevealAll
+                  ? 'border-amber-500/40 bg-amber-950/50 text-amber-300 hover:bg-amber-900/40'
+                  : 'border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200',
+                (loading || cardsCount === 0) && 'cursor-not-allowed opacity-50'
+              )}
+            >
+              {testRevealAll ? ui.restore : ui.revealAll}
+            </button>
+            <button
+              type="button"
               onClick={toggleLang}
               title={lang === 'zh' ? 'Switch to English' : '切换到中文'}
               aria-label={lang === 'zh' ? 'Switch to English (EN)' : '切换到中文 (中)'}
@@ -487,21 +502,6 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
             <span>{loading ? ui.loadingShort : running ? ui.stopShort : ui.startShort}</span>
           </button>
 
-          <button
-            type="button"
-            onClick={toggleTestRevealAll}
-            disabled={loading || cardsCount === 0}
-            title={testRevealAll ? '恢复所有卡片为背面' : '临时测试：翻开全部单词牌'}
-            className={cn(
-              'inline-flex h-10 min-w-[3rem] items-center justify-center rounded-lg border px-2.5 text-xs font-medium transition-colors',
-              testRevealAll
-                ? 'border-amber-500/40 bg-amber-950/50 text-amber-300 hover:bg-amber-900/40'
-                : 'border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200',
-              (loading || cardsCount === 0) && 'cursor-not-allowed opacity-50'
-            )}
-          >
-            {testRevealAll ? ui.restore : ui.revealAll}
-          </button>
         </div>
       </header>
 
