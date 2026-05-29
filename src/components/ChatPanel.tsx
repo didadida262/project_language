@@ -362,20 +362,25 @@ export function ChatPanel() {
     try {
       if (game?.canJudge && game.currentCard) {
         const card = game.currentCard;
-        const result = await sendJudge(
-          {
-            word: card.word,
-            definition: card.definition,
-            root: card.root,
-            rootMeaning: card.rootMeaning,
-            userExplanation: text,
-          },
-          settings
-        );
-        game.recordVerdict(result.verdict);
-        const verdictColor = result.verdict === '正确' ? '✅' : '❌';
-        const reply = `${verdictColor} 【裁决】${result.verdict}\n\n${result.feedback}`;
-        setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', content: reply }]);
+        game.setJudging(true);
+        try {
+          const result = await sendJudge(
+            {
+              word: card.word,
+              definition: card.definition,
+              root: card.root,
+              rootMeaning: card.rootMeaning,
+              userExplanation: text,
+            },
+            settings
+          );
+          game.recordVerdict(result.verdict);
+          const verdictColor = result.verdict === '正确' ? '✅' : '❌';
+          const reply = `${verdictColor} 【裁决】${result.verdict}\n\n${result.feedback}`;
+          setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', content: reply }]);
+        } finally {
+          game.setJudging(false);
+        }
       } else {
         setMessages((prev) => [
           ...prev,

@@ -142,9 +142,11 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
   const [running, setRunning] = useState(false);
   const [current, setCurrent] = useState<FlatCard | null>(null);
   const [countdown, setCountdown] = useState(0);
-  const timerRef = useRef<any>(0);
-  const timeoutRef = useRef<any>(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const sectionRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const wasJudgingRef = useRef(false);
+  const pausedCountdownRef = useRef(0);
   
   /* 性能优化：缓存 allCards */
   const allCards = useMemo(() => {
@@ -302,6 +304,41 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
     game.registerAdvanceRound(advanceAfterVerdict);
     return () => game.unregisterAdvanceRound();
   }, [game, advanceAfterVerdict]);
+
+  /** 阅卷中暂停倒计时；阅卷失败且仍可提交时恢复剩余时间 */
+  useEffect(() => {
+    if (!running) {
+      wasJudgingRef.current = game.isJudging;
+      return;
+    }
+
+    if (game.isJudging && !wasJudgingRef.current) {
+      pausedCountdownRef.current = countdown;
+      clearInterval(timerRef.current);
+      clearTimeout(timeoutRef.current);
+    } else if (!game.isJudging && wasJudgingRef.current) {
+      if (game.canJudge && pausedCountdownRef.current > 0) {
+        const remaining = pausedCountdownRef.current;
+        setCountdown(remaining);
+        const startTime = Date.now();
+        timerRef.current = setInterval(() => {
+          const elapsed = Math.floor((Date.now() - startTime) / 1000);
+          const left = remaining - elapsed;
+          if (left <= 0) {
+            clearInterval(timerRef.current);
+            setCountdown(0);
+          } else {
+            setCountdown(left);
+          }
+        }, 1000);
+        timeoutRef.current = setTimeout(() => {
+          void nextRound(currentRef.current);
+        }, remaining * 1000);
+      }
+    }
+
+    wasJudgingRef.current = game.isJudging;
+  }, [game.isJudging, game.canJudge, running, countdown, nextRound]);
 
   /* ── 卸载清理 ── */
   useEffect(() => clearTimers, [clearTimers]);

@@ -26,12 +26,15 @@ interface GameSessionContextValue {
   correct: number;
   wrong: number;
   judgedThisRound: boolean;
+  /** 正在调用阅卷 API，轰炸页应暂停倒计时 */
+  isJudging: boolean;
   currentCard: ActiveCard | null;
   showFinale: boolean;
   lastVerdict: Verdict | null;
   startSession: () => void;
   stopSession: () => void;
   beginRound: (card: ActiveCard, round: number) => void;
+  setJudging: (judging: boolean) => void;
   recordVerdict: (verdict: Verdict) => void;
   registerAdvanceRound: (handler: () => void) => void;
   unregisterAdvanceRound: () => void;
@@ -48,6 +51,7 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
   const [correct, setCorrect] = useState(0);
   const [wrong, setWrong] = useState(0);
   const [judgedThisRound, setJudgedThisRound] = useState(false);
+  const [isJudging, setIsJudging] = useState(false);
   const [currentCard, setCurrentCard] = useState<ActiveCard | null>(null);
   const [showFinale, setShowFinale] = useState(false);
   const [lastVerdict, setLastVerdict] = useState<Verdict | null>(null);
@@ -59,6 +63,7 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
     setCorrect(0);
     setWrong(0);
     setJudgedThisRound(false);
+    setIsJudging(false);
     setCurrentCard(null);
     setShowFinale(false);
     setLastVerdict(null);
@@ -68,6 +73,7 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
     setActive(false);
     setRound(0);
     setJudgedThisRound(false);
+    setIsJudging(false);
     setCurrentCard(null);
     setShowFinale(false);
     setLastVerdict(null);
@@ -77,7 +83,12 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
     setRound(roundNum);
     setCurrentCard(card);
     setJudgedThisRound(false);
+    setIsJudging(false);
     setLastVerdict(null);
+  }, []);
+
+  const setJudging = useCallback((judging: boolean) => {
+    setIsJudging(judging);
   }, []);
 
   const registerAdvanceRound = useCallback((handler: () => void) => {
@@ -125,12 +136,14 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
       correct,
       wrong,
       judgedThisRound,
+      isJudging,
       currentCard,
       showFinale,
       lastVerdict,
       startSession,
       stopSession,
       beginRound,
+      setJudging,
       recordVerdict,
       registerAdvanceRound,
       unregisterAdvanceRound,
@@ -144,12 +157,14 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
       correct,
       wrong,
       judgedThisRound,
+      isJudging,
       currentCard,
       showFinale,
       lastVerdict,
       startSession,
       stopSession,
       beginRound,
+      setJudging,
       recordVerdict,
       registerAdvanceRound,
       unregisterAdvanceRound,
