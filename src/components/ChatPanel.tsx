@@ -14,7 +14,7 @@ const POS_STORAGE_KEY = 'chat-panel-position';
 const VIEWPORT_MARGIN = 20;
 const MOBILE_INSET = 8;
 const MOBILE_BREAKPOINT = 768;
-const MOBILE_COLLAPSED_WIDTH = 240;
+const MOBILE_COLLAPSED_WIDTH = 100;
 const MOBILE_EXPANDED_WIDTH = `calc(100vw - ${MOBILE_INSET * 2}px)`;
 const MOBILE_EXPANDED_MIN_HEIGHT = 220;
 const MOBILE_EXPANDED_MAX_HEIGHT = 320;
@@ -22,7 +22,7 @@ const MOBILE_EXPANDED_MAX_HEIGHT = 320;
 const DEFAULT_COLLAPSED_TOP = 72;
 const PANEL_WIDTH = 380;
 const PANEL_HEIGHT = 480;
-const COLLAPSED_WIDTH = 300;
+const COLLAPSED_WIDTH = 112;
 const COLLAPSED_HEIGHT = 40;
 const PANEL_RADIUS = 12;
 const COLLAPSED_RADIUS = 8;
@@ -36,41 +36,6 @@ interface ChatMessage {
 }
 
 let idCounter = 0;
-
-function ModelTag({
-  model,
-  loading,
-  collapsed,
-  t,
-}: {
-  model: string;
-  loading: boolean;
-  collapsed: boolean;
-  t: ReturnType<typeof getChatUi>;
-}) {
-  const label = loading ? t.modelChecking : model.trim() || t.modelNotConfigured;
-  const title = model.trim() ? t.modelCurrent(model) : t.modelConfigureHint;
-
-  return (
-    <span
-      className={cn(
-        'inline-flex min-w-0 shrink items-center gap-1.5 rounded-md border',
-        'border-cyan-400/25 bg-gradient-to-r from-cyan-500/[0.12] via-indigo-500/10 to-violet-500/[0.12]',
-        'font-mono font-medium text-cyan-100/90',
-        'shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_0_18px_-6px_rgba(34,211,238,0.45)]',
-        'ml-auto backdrop-blur-sm',
-        collapsed ? 'max-w-[9.5rem] px-2 py-1 text-xs' : 'max-w-[12rem] px-2.5 py-1 text-sm'
-      )}
-      title={title}
-    >
-      <span className="relative flex h-2 w-2 shrink-0" aria-hidden>
-        <span className="absolute inset-0 rounded-full bg-cyan-400/50 animate-ping" />
-        <span className="relative h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.85)]" />
-      </span>
-      <span className="truncate leading-tight">{label}</span>
-    </span>
-  );
-}
 
 export function ChatPanel() {
   const { lang } = useAppLanguage();
@@ -523,18 +488,12 @@ export function ChatPanel() {
           >
             {t.judgeName}
           </span>
-          <ModelTag
-            model={settings.model}
-            loading={loadingModels}
-            collapsed={collapsed}
-            t={t}
-          />
           <button
             type="button"
             aria-label={collapsed ? t.expandJudge : t.collapseJudge}
             aria-expanded={!collapsed}
             title={collapsed ? t.expand : t.collapse}
-            className="inline-flex shrink-0 items-center justify-center p-0.5 text-white/45 transition-colors hover:text-white/75"
+            className="inline-flex shrink-0 items-center justify-center p-0.5 text-white/45 transition-colors hover:text-white/75 ml-auto"
             onClick={() => {
               setCollapsed((v) => {
                 const next = !v;
