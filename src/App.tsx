@@ -14,6 +14,7 @@ function getPageFromHash(): 'home' | 'bombard' {
   // 支持 #bombard 或 #bombard?unit=1 格式
   return hash.startsWith('bombard') ? 'bombard' : 'home';
 }
+// 
 
 function getUnitIdFromHash(): number {
   const hash = window.location.hash;
