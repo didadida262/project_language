@@ -1,10 +1,11 @@
-import { faEye, faEyeSlash, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faEyeSlash, faGlobe, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useState, type FormEvent } from 'react';
-import { AmbientBackdrop } from '../components/AmbientBackdrop';
+import { useState, type FormEvent, type ReactNode } from 'react';
+import { AuthThemeCard } from '../components/AuthThemeCard';
+import { ParticleBackdrop } from '../components/ParticleBackdrop';
 import { SiteBrand } from '../components/SiteBrand';
-import { useAppLanguage } from '../context/AppLanguageContext';
+import { useAppLanguage, type AppLanguage } from '../context/AppLanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { cn } from '../lib/cn';
 
@@ -28,6 +29,13 @@ const COPY = {
     emailRequired: '请填写邮箱',
     configMissing: 'Supabase 未配置',
     configHint: '请在 .env 中设置 VITE_SUPABASE_URL 与 VITE_SUPABASE_ANON_KEY',
+    lang: 'EN',
+    showPassword: '显示密码',
+    hidePassword: '隐藏密码',
+    authInvalidCredentials: '邮箱或密码错误',
+    authEmailTaken: '该邮箱已被注册',
+    authPasswordShort: '密码至少 6 位',
+    authEmailDisabled: 'Supabase 未开启邮箱注册，请在控制台 Authentication → Sign In / Providers → Email 中开启',
   },
   en: {
     brand: 'Isshin English Root Zhan',
@@ -46,8 +54,55 @@ const COPY = {
     emailRequired: 'Email is required',
     configMissing: 'Supabase is not configured',
     configHint: 'Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env',
+    lang: '中',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
+    authInvalidCredentials: 'Invalid email or password',
+    authEmailTaken: 'This email is already registered',
+    authPasswordShort: 'Password must be at least 6 characters',
+    authEmailDisabled:
+      'Email signups are disabled in Supabase. Enable Email under Sign In / Providers.',
   },
 } as const;
+
+const inputClass =
+  'w-full rounded-lg border border-white/10 bg-black/25 px-3 py-2.5 text-sm text-zinc-100 outline-none transition-all placeholder:text-zinc-500 focus:border-cyan-400/50 focus:bg-black/35 focus:ring-1 focus:ring-cyan-400/25 focus:shadow-[0_0_20px_-8px_rgba(34,211,238,0.45)]';
+
+function localizeAuthError(message: string, lang: AppLanguage): string {
+  if (lang === 'en') return message;
+  const t = COPY.zh;
+  const lower = message.toLowerCase();
+  if (lower.includes('invalid login credentials') || lower.includes('invalid email or password')) {
+    return t.authInvalidCredentials;
+  }
+  if (lower.includes('user already registered') || lower.includes('already registered')) {
+    return t.authEmailTaken;
+  }
+  if (lower.includes('password')) {
+    return t.authPasswordShort;
+  }
+  if (lower.includes('email signups are disabled') || lower.includes('email_provider_disabled')) {
+    return t.authEmailDisabled;
+  }
+  return message;
+}
+
+function LangToggleButton() {
+  const { lang, toggleLang } = useAppLanguage();
+  const t = COPY[lang];
+
+  return (
+    <button
+      type="button"
+      onClick={toggleLang}
+      title={lang === 'zh' ? 'Switch to English' : '切换到中文'}
+      aria-label={lang === 'zh' ? `Switch to English (${t.lang})` : `切换到中文 (${t.lang})`}
+      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-zinc-400 backdrop-blur-md transition-colors hover:border-cyan-500/30 hover:bg-white/10 hover:text-cyan-300"
+    >
+      <FontAwesomeIcon icon={faGlobe} className="h-4 w-4 text-cyan-400" />
+    </button>
+  );
+}
 
 export function AuthPage() {
   const { lang } = useAppLanguage();
@@ -97,7 +152,7 @@ export function AuthPage() {
       if (mode === 'login') {
         const { error: signInError } = await signIn(trimmedEmail, password);
         if (signInError) {
-          setError(signInError);
+          setError(localizeAuthError(signInError, lang));
         }
       } else {
         const { error: signUpError, needsEmailConfirmation } = await signUp(
@@ -105,7 +160,7 @@ export function AuthPage() {
           password
         );
         if (signUpError) {
-          setError(signUpError);
+          setError(localizeAuthError(signUpError, lang));
         } else if (needsEmailConfirmation) {
           setInfo(t.emailConfirm);
           switchMode('login');
@@ -116,148 +171,158 @@ export function AuthPage() {
     }
   };
 
-  if (!configured) {
-    return (
-      <div className="relative flex min-h-screen items-center justify-center bg-zinc-950 px-4 text-zinc-100">
-        <AmbientBackdrop />
-        <div className="relative z-10 max-w-md rounded-2xl border border-white/10 bg-zinc-950/80 p-8 text-center backdrop-blur-xl">
-          <h1 className="text-lg font-semibold text-white">{t.configMissing}</h1>
-          <p className="mt-3 text-sm text-zinc-400">{t.configHint}</p>
-        </div>
+  const pageShell = (content: ReactNode) => (
+    <div className="relative flex min-h-screen items-center justify-center bg-zinc-950 px-4 py-10 text-zinc-100">
+      <ParticleBackdrop />
+      <div className="absolute right-4 top-4 z-20 md:right-6 md:top-6">
+        <LangToggleButton />
       </div>
+      <div className="relative z-10 w-full max-w-md">{content}</div>
+    </div>
+  );
+
+  if (!configured) {
+    return pageShell(
+      <AuthThemeCard className="p-8 text-center">
+        <h1 className="text-lg font-semibold text-white">{t.configMissing}</h1>
+        <p className="mt-3 text-sm text-zinc-400">{t.configHint}</p>
+      </AuthThemeCard>
     );
   }
 
-  return (
-    <div className="relative flex min-h-screen items-center justify-center bg-zinc-950 px-4 py-10 text-zinc-100">
-      <AmbientBackdrop />
+  return pageShell(
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+    >
+      <div className="mb-8 flex justify-center">
+        <SiteBrand title={t.brand} logoSize={48} />
+      </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-        className="relative z-10 w-full max-w-md"
-      >
-        <div className="mb-8 flex justify-center">
-          <SiteBrand title={t.brand} logoSize={48} />
+      <AuthThemeCard className="p-6 sm:p-8">
+        <div className="mb-6 flex rounded-xl border border-white/10 bg-black/20 p-1 backdrop-blur-sm">
+          {(['login', 'register'] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => switchMode(tab)}
+              className={cn(
+                'flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300',
+                mode === tab
+                  ? 'border border-cyan-400/35 bg-gradient-to-b from-zinc-700/90 via-zinc-900/95 to-black text-cyan-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_0_20px_-8px_rgba(34,211,238,0.35)]'
+                  : 'border border-transparent text-zinc-500 hover:text-zinc-200'
+              )}
+            >
+              {tab === 'login' ? t.login : t.register}
+            </button>
+          ))}
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-6 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-8">
-          <div className="mb-6 flex rounded-lg border border-white/10 bg-white/[0.03] p-1">
-            {(['login', 'register'] as const).map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => switchMode(tab)}
-                className={cn(
-                  'flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                  mode === tab
-                    ? 'bg-white/10 text-white shadow-sm'
-                    : 'text-zinc-400 hover:text-zinc-200'
-                )}
-              >
-                {tab === 'login' ? t.login : t.register}
-              </button>
-            ))}
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-zinc-400">{t.email}</span>
+            <input
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={inputClass}
+              placeholder="you@example.com"
+            />
+          </label>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <label className="block">
-              <span className="mb-1.5 block text-sm text-zinc-400">{t.email}</span>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-zinc-400">{t.password}</span>
+            <div className="relative">
               <input
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-zinc-600 focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/30"
-                placeholder="you@example.com"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={cn(inputClass, 'pr-10')}
               />
-            </label>
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1.5 text-zinc-500 transition-colors hover:text-cyan-300"
+                aria-label={showPassword ? t.hidePassword : t.showPassword}
+              >
+                <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} className="h-4 w-4" />
+              </button>
+            </div>
+          </label>
 
-            <label className="block">
-              <span className="mb-1.5 block text-sm text-zinc-400">{t.password}</span>
-              <div className="relative">
+          <AnimatePresence mode="wait">
+            {mode === 'register' && (
+              <motion.label
+                key="confirm"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="block overflow-hidden"
+              >
+                <span className="mb-1.5 block text-sm font-medium text-zinc-400">
+                  {t.confirmPassword}
+                </span>
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 pr-10 text-sm text-white outline-none transition-colors placeholder:text-zinc-600 focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/30"
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={inputClass}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1.5 text-zinc-500 hover:text-zinc-300"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} className="h-4 w-4" />
-                </button>
-              </div>
-            </label>
-
-            <AnimatePresence mode="wait">
-              {mode === 'register' && (
-                <motion.label
-                  key="confirm"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="block overflow-hidden"
-                >
-                  <span className="mb-1.5 block text-sm text-zinc-400">{t.confirmPassword}</span>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-zinc-600 focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/30"
-                  />
-                </motion.label>
-              )}
-            </AnimatePresence>
-
-            {error && (
-              <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-                {error}
-              </p>
+              </motion.label>
             )}
-            {info && (
-              <p className="rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 text-sm text-cyan-200">
-                {info}
-              </p>
-            )}
+          </AnimatePresence>
 
+          {error && (
+            <p className="rounded-lg border border-red-500/30 bg-red-950/40 px-3 py-2 text-sm text-red-300">
+              {error}
+            </p>
+          )}
+          {info && (
+            <p className="rounded-lg border border-cyan-500/30 bg-cyan-950/30 px-3 py-2 text-sm text-cyan-200">
+              {info}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className={cn(
+              'group flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold tracking-wide transition-all duration-300',
+              'border-zinc-600/90 bg-gradient-to-b from-zinc-700/95 via-zinc-900 to-black text-zinc-100',
+              'shadow-[inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-12px_24px_-12px_rgba(0,0,0,0.5)]',
+              'hover:border-cyan-500/25 hover:text-cyan-50 hover:animate-lightning-rim',
+              'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:animate-none'
+            )}
+          >
+            {loading && <FontAwesomeIcon icon={faSpinner} spin className="h-4 w-4 text-cyan-400" />}
+            {mode === 'login' ? t.submitLogin : t.submitRegister}
+          </button>
+        </form>
+
+        <p className="mt-5 text-center text-sm text-zinc-500">
+          {mode === 'login' ? (
             <button
-              type="submit"
-              disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-cyan-600 to-violet-600 px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              type="button"
+              onClick={() => switchMode('register')}
+              className="text-cyan-400 transition-colors hover:text-cyan-200"
             >
-              {loading && <FontAwesomeIcon icon={faSpinner} spin className="h-4 w-4" />}
-              {mode === 'login' ? t.submitLogin : t.submitRegister}
+              {t.switchToRegister}
             </button>
-          </form>
-
-          <p className="mt-5 text-center text-sm text-zinc-500">
-            {mode === 'login' ? (
-              <button
-                type="button"
-                onClick={() => switchMode('register')}
-                className="text-cyan-400 hover:text-cyan-300"
-              >
-                {t.switchToRegister}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => switchMode('login')}
-                className="text-cyan-400 hover:text-cyan-300"
-              >
-                {t.switchToLogin}
-              </button>
-            )}
-          </p>
-        </div>
-      </motion.div>
-    </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => switchMode('login')}
+              className="text-cyan-400 transition-colors hover:text-cyan-200"
+            >
+              {t.switchToLogin}
+            </button>
+          )}
+        </p>
+      </AuthThemeCard>
+    </motion.div>
   );
 }

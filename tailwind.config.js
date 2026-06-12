@@ -31,6 +31,13 @@ export default {
         'orb-1': 'orb-1 48s ease-in-out infinite',
         'orb-2': 'orb-2 56s ease-in-out infinite',
         'orb-3': 'orb-3 64s ease-in-out infinite',
+        'ink-drift-1': 'ink-drift-1 42s ease-in-out infinite',
+        'ink-drift-2': 'ink-drift-2 56s ease-in-out infinite',
+        'ink-blob-1': 'ink-blob-1 38s ease-in-out infinite',
+        'ink-blob-2': 'ink-blob-2 46s ease-in-out infinite',
+        'ink-blob-3': 'ink-blob-3 52s ease-in-out infinite',
+        'ink-blob-4': 'ink-blob-4 44s ease-in-out infinite',
+        'ink-veil': 'ink-veil 80s linear infinite',
         sheen: 'sheen 14s ease-in-out infinite',
         /** 主按钮 hover：边缘电光沿轮廓跳变 */
         'lightning-rim': 'lightning-rim 0.44s steps(8, jump-end) infinite',
@@ -68,6 +75,36 @@ export default {
           '25%': { transform: 'translate(2%, 3%) scale(1.02)' },
           '50%': { transform: 'translate(-2.5%, 2%) scale(1.018)' },
           '75%': { transform: 'translate(1%, -1.5%) scale(1.012)' },
+        },
+        'ink-drift-1': {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1) rotate(0deg)' },
+          '33%': { transform: 'translate(3%, -2%) scale(1.04) rotate(1deg)' },
+          '66%': { transform: 'translate(-2%, 3%) scale(1.02) rotate(-0.5deg)' },
+        },
+        'ink-drift-2': {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+          '40%': { transform: 'translate(-4%, 2%) scale(1.05)' },
+          '70%': { transform: 'translate(2%, -3%) scale(1.03)' },
+        },
+        'ink-blob-1': {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+          '50%': { transform: 'translate(6%, 4%) scale(1.08)' },
+        },
+        'ink-blob-2': {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+          '50%': { transform: 'translate(-5%, 6%) scale(1.06)' },
+        },
+        'ink-blob-3': {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+          '50%': { transform: 'translate(4%, -5%) scale(1.07)' },
+        },
+        'ink-blob-4': {
+          '0%, 100%': { transform: 'translate(-50%, 0) scale(1)' },
+          '50%': { transform: 'translate(-48%, -4%) scale(1.1)' },
+        },
+        'ink-veil': {
+          '0%': { transform: 'translate(0, 0)' },
+          '100%': { transform: 'translate(-3%, 2%)' },
         },
         sheen: {
           '0%, 100%': { opacity: '0.35' },

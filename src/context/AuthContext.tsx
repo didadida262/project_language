@@ -37,6 +37,9 @@ function mapAuthError(message: string): string {
   if (lower.includes('password')) {
     return 'Password must be at least 6 characters';
   }
+  if (lower.includes('email signups are disabled') || lower.includes('email_provider_disabled')) {
+    return 'Email signups are disabled in Supabase. Enable Email under Sign In / Providers.';
+  }
   return message;
 }
 
