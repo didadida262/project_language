@@ -5,3 +5,6 @@ compatibility_flags = ["nodejs_compat"]
 
 [placement]
 hostname = "aiplatform.njsrd.com"
+
+[vars]
+SUPABASE_URL = "https://zhryubclcfityqqqdsaa.supabase.co"

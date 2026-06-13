@@ -1,5 +1,6 @@
 import { createMiddleware } from 'hono/factory';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { SUPABASE_PROJECT_URL } from './types';
 
 export interface AuthBindings {
   SUPABASE_URL?: string;
@@ -17,26 +18,28 @@ interface VerifiedClaims {
   role?: string;
 }
 
+function resolveSupabaseUrl(env: AuthBindings): string {
+  return (env.SUPABASE_URL?.trim() || SUPABASE_PROJECT_URL).replace(/\/$/, '');
+}
+
 async function verifySupabaseJwt(
   token: string,
   env: AuthBindings
 ): Promise<VerifiedClaims | null> {
-  const supabaseUrl = env.SUPABASE_URL?.trim().replace(/\/$/, '');
+  const supabaseUrl = resolveSupabaseUrl(env);
 
-  if (supabaseUrl) {
-    try {
-      const jwks = createRemoteJWKSet(
-        new URL(`${supabaseUrl}/auth/v1/.well-known/jwks.json`)
-      );
-      const { payload } = await jwtVerify(token, jwks);
-      return {
-        sub: payload.sub ?? '',
-        email: typeof payload.email === 'string' ? payload.email : undefined,
-        role: typeof payload.role === 'string' ? payload.role : undefined,
-      };
-    } catch {
-      /* fall through to legacy HS256 */
-    }
+  try {
+    const jwks = createRemoteJWKSet(
+      new URL(`${supabaseUrl}/auth/v1/.well-known/jwks.json`)
+    );
+    const { payload } = await jwtVerify(token, jwks);
+    return {
+      sub: payload.sub ?? '',
+      email: typeof payload.email === 'string' ? payload.email : undefined,
+      role: typeof payload.role === 'string' ? payload.role : undefined,
+    };
+  } catch {
+    /* fall through to legacy HS256 */
   }
 
   const secret = env.SUPABASE_JWT_SECRET?.trim();
@@ -59,12 +62,6 @@ export const requireAuth = createMiddleware<{
   Bindings: AuthBindings;
   Variables: AuthVariables;
 }>(async (c, next) => {
-  const supabaseUrl = c.env.SUPABASE_URL?.trim();
-  const jwtSecret = c.env.SUPABASE_JWT_SECRET?.trim();
-  if (!supabaseUrl && !jwtSecret) {
-    return c.json({ detail: 'Server auth is not configured' }, 503);
-  }
-
   const authHeader = c.req.header('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
     return c.json({ detail: 'Unauthorized' }, 401);

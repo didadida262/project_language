@@ -98,8 +98,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const getAccessToken = useCallback(async () => {
-    const { data } = await supabase.auth.getSession();
-    return data.session?.access_token ?? null;
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !data.session) return null;
+
+    const expiresAt = data.session.expires_at ?? 0;
+    const now = Math.floor(Date.now() / 1000);
+    if (expiresAt - now < 60) {
+      const { data: refreshed } = await supabase.auth.refreshSession();
+      return refreshed.session?.access_token ?? null;
+    }
+
+    return data.session.access_token;
   }, []);
 
   const value = useMemo<AuthContextValue>(
