@@ -447,8 +447,8 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
       {/* ── 顶栏 ── */}
       <FinaleOverlay />
 
-      <header className="relative z-40 sticky top-0 flex min-h-[3.5rem] items-center gap-3 border-b border-white/[0.08] bg-zinc-950/70 px-3 py-3 backdrop-blur-xl md:min-h-[4rem] md:gap-4 md:px-6 md:py-3.5">
-          <div className="flex min-w-0 shrink-0 items-center gap-2.5 md:gap-3">
+      <header className="relative z-40 sticky top-0 grid min-h-[3.5rem] grid-cols-[1fr_auto_1fr] items-center border-b border-white/[0.08] bg-zinc-950/70 px-3 py-3 backdrop-blur-xl md:min-h-[4rem] md:px-6 md:py-3.5">
+          <div className="flex min-w-0 items-center justify-self-start gap-2.5 md:gap-3">
             <img src={logoUrl} alt="" className="hidden h-10 shrink-0 object-contain sm:block" />
             <img src={logoUrl} alt="" className="h-10 shrink-0 object-contain sm:hidden" />
             <h1 className="min-w-0 font-display text-sm font-semibold tracking-tight text-white md:text-lg">
@@ -459,7 +459,7 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
             </h1>
           </div>
 
-          <div className="flex min-w-0 flex-1 items-center justify-center gap-2.5 md:gap-3">
+          <div className="flex items-center justify-center gap-2.5 md:gap-3">
             <div
               className={cn(
                 'relative flex h-11 shrink-0 items-center justify-center overflow-visible transition-[width] duration-200 md:h-12',
@@ -543,8 +543,9 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
             </button>
           </div>
 
+          <div className="flex min-w-0 items-center justify-self-end gap-2.5 md:gap-3.5">
           {!running && (
-          <div className="flex shrink-0 items-center justify-end gap-2.5 md:gap-3.5">
+          <>
             <button
               type="button"
               onClick={toggleTestRevealAll}
@@ -579,8 +580,9 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
               <span className="hidden sm:inline">{ui.back}</span>
               <span className="sm:hidden">{ui.backShort}</span>
             </button>
-          </div>
+          </>
           )}
+          </div>
       </header>
 
       {/* ── 主体内容 ── */}
