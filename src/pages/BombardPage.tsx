@@ -1,6 +1,7 @@
 import { faGlobe, faPlay, faStop } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { BombardBackdrop } from '../components/BombardBackdrop';
+import { BombardCardAuras } from '../components/BombardCardAuras';
 import { FinaleOverlay } from '../components/FinaleOverlay';
 import { SettingsButton } from '../components/SettingsButton';
 import { UserMenu } from '../components/UserMenu';
@@ -589,7 +590,9 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
       </header>
 
       {/* ── 主体内容 ── */}
-      <main className="relative z-10 mx-auto max-w-6xl space-y-10 px-3 py-6 sm:space-y-12 sm:px-4 sm:py-10 md:space-y-14 md:px-6 md:py-12">
+      <main className="relative z-10 mx-auto max-w-6xl space-y-10 px-3 py-6 pb-10 sm:space-y-12 sm:px-4 sm:py-10 sm:pb-12 md:space-y-14 md:px-6 md:py-12 md:pb-16">
+        <BombardCardAuras />
+        <div className="relative z-10">
         <AnimatePresence>
           {showFocusBackdrop && (
             <motion.div
@@ -703,6 +706,7 @@ export function BombardPage({ onBack, unitId }: { onBack: () => void; unitId: nu
             </div>
           ))
         )}
+        </div>
       </main>
     </div>
   );
@@ -879,19 +883,32 @@ const FlipCard = React.memo(
             </>
           )}
 
-          <div className="relative z-10 flex h-full flex-col items-center justify-center gap-1.5 px-2 py-3">
-            <span className="shrink-0 font-display text-lg font-bold text-white drop-shadow-[0_0_10px_rgba(129,140,248,0.35)] md:text-xl">
-              {word.word}
-            </span>
-            <div className="h-px w-14 shrink-0 bg-gradient-to-r from-transparent via-indigo-400/50 to-transparent" />
-            <motion.p
-              className="min-h-0 max-h-[42%] w-full overflow-y-auto text-center text-xs leading-relaxed text-zinc-300 md:text-sm"
-              initial={{ opacity: 0, y: 4 }}
-              animate={showDef ? { opacity: 1, y: 0 } : { opacity: 0, y: 4 }}
+          <div className="relative z-10 grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] px-3 pb-5 pt-5 md:px-4 md:pb-6 md:pt-6">
+            <div className="w-full max-w-[86%] justify-self-center text-center">
+              <span className="font-display text-base font-bold break-words text-white drop-shadow-[0_0_10px_rgba(129,140,248,0.35)] md:text-lg">
+                {word.word}
+              </span>
+              <div className="mx-auto mt-1.5 h-px w-14 bg-gradient-to-r from-transparent via-indigo-400/50 to-transparent" />
+            </div>
+
+            <motion.div
+              className="mt-3 flex min-h-0 w-full max-w-[86%] flex-col justify-self-center md:mt-4"
+              initial={{ opacity: 0 }}
+              animate={showDef ? { opacity: 1 } : { opacity: 0 }}
               transition={{ duration: immediateDefinition ? 0.2 : 0.5, ease: 'easeOut' }}
             >
-              {word.definition}
-            </motion.p>
+              <div
+                className={cn(
+                  'scrollbar-chat min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-1',
+                  !showDef && 'pointer-events-none'
+                )}
+                title={word.definition}
+              >
+                <p className="pb-4 text-center text-xs leading-relaxed break-words text-cyan-100 drop-shadow-[0_0_10px_rgba(103,232,249,0.28)] md:pb-5 md:text-sm">
+                  {word.definition}
+                </p>
+              </div>
+            </motion.div>
           </div>
         </div>
       </motion.div>

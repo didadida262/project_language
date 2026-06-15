@@ -1,4 +1,4 @@
-import { faArrowUp, faChevronDown, faChevronUp, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { faArrowUp, faChevronDown, faChevronUp, faScaleBalanced, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -22,7 +22,6 @@ const POS_STORAGE_KEY = 'chat-panel-position';
 const VIEWPORT_MARGIN = 20;
 const MOBILE_INSET = 8;
 const MOBILE_BREAKPOINT = 768;
-const MOBILE_COLLAPSED_WIDTH = 100;
 const MOBILE_EXPANDED_WIDTH = `calc(100vw - ${MOBILE_INSET * 2}px)`;
 const MOBILE_EXPANDED_MIN_HEIGHT = 220;
 const MOBILE_EXPANDED_MAX_HEIGHT = 320;
@@ -30,10 +29,9 @@ const MOBILE_EXPANDED_MAX_HEIGHT = 320;
 const DEFAULT_COLLAPSED_TOP = 72;
 const PANEL_WIDTH = 380;
 const PANEL_HEIGHT = 480;
-const COLLAPSED_WIDTH = 112;
-const COLLAPSED_HEIGHT = DOCKED_COLLAPSED_HEIGHT;
+/** 浮窗收起：圆形 logo 按钮 */
+const COLLAPSED_LOGO_SIZE = 52;
 const PANEL_RADIUS = 12;
-const COLLAPSED_RADIUS = 8;
 
 const panelTransition = { type: 'spring' as const, stiffness: 360, damping: 30 };
 
@@ -99,12 +97,24 @@ export function ChatPanel() {
   );
 
   const clampPositionForCollapsed = useCallback(
-    (x: number, y: number, isCollapsed: boolean) =>
-      clampPosition(x, y, {
-        width: isCollapsed ? COLLAPSED_WIDTH : PANEL_WIDTH,
-        height: isCollapsed ? COLLAPSED_HEIGHT : PANEL_HEIGHT,
-      }),
-    [clampPosition]
+    (x: number, y: number, isCollapsed: boolean, docked = false) => {
+      const width = isCollapsed
+        ? docked
+          ? getDockedWidth(window.innerWidth)
+          : COLLAPSED_LOGO_SIZE
+        : isMobile
+          ? window.innerWidth - MOBILE_INSET * 2
+          : PANEL_WIDTH;
+      const height = isCollapsed
+        ? docked
+          ? DOCKED_COLLAPSED_HEIGHT
+          : COLLAPSED_LOGO_SIZE
+        : isMobile
+          ? mobileExpandedHeight
+          : PANEL_HEIGHT;
+      return clampPosition(x, y, { width, height });
+    },
+    [clampPosition, isMobile, mobileExpandedHeight]
   );
 
   const initPosition = useCallback(() => {
@@ -115,7 +125,7 @@ export function ChatPanel() {
       try {
         const { x, y } = JSON.parse(saved) as { x: number; y: number };
         if (typeof x === 'number' && typeof y === 'number') {
-          setPosition(clampPositionForCollapsed(x, y, collapsed));
+          setPosition(clampPositionForCollapsed(x, y, collapsed, !!game?.active));
           return;
         }
       } catch {
@@ -124,12 +134,13 @@ export function ChatPanel() {
     }
     setPosition(
       clampPositionForCollapsed(
-        window.innerWidth - COLLAPSED_WIDTH - (isMobile ? MOBILE_INSET : VIEWPORT_MARGIN),
+        window.innerWidth - COLLAPSED_LOGO_SIZE - (isMobile ? MOBILE_INSET : VIEWPORT_MARGIN),
         DEFAULT_COLLAPSED_TOP,
-        collapsed
+        collapsed,
+        false
       )
     );
-  }, [clampPositionForCollapsed, collapsed, isMobile]);
+  }, [clampPositionForCollapsed, collapsed, game?.active, isMobile]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -163,7 +174,7 @@ export function ChatPanel() {
     if (isDraggingRef.current || !position) return;
     setPosition((p) => {
       if (!p) return p;
-      const next = clampPositionForCollapsed(p.x, p.y, collapsed);
+      const next = clampPositionForCollapsed(p.x, p.y, collapsed, false);
       return next.x === p.x && next.y === p.y ? p : next;
     });
   }, [collapsed, clampPositionForCollapsed, isMobile, position]);
@@ -210,6 +221,7 @@ export function ChatPanel() {
     (clientX: number, clientY: number) => {
       if (!isDraggingRef.current) return;
       const didDrag = dragActiveRef.current;
+      const shouldExpandOnTap = collapsed && !game?.active && !didDrag;
       isDraggingRef.current = false;
       dragActiveRef.current = false;
       setIsDragging(false);
@@ -224,12 +236,15 @@ export function ChatPanel() {
         );
         setPosition(next);
         localStorage.setItem(POS_STORAGE_KEY, JSON.stringify(next));
+      } else if (shouldExpandOnTap) {
+        setCollapsed(false);
+        setPosition((p) => (p ? clampPositionForCollapsed(p.x, p.y, false, false) : p));
       }
 
       dragCleanupRef.current?.();
       dragCleanupRef.current = null;
     },
-    [clampPosition]
+    [clampPosition, clampPositionForCollapsed, collapsed, game?.active]
   );
 
   const handleDragStart = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -405,6 +420,7 @@ export function ChatPanel() {
   };
 
   const isDocked = !!game?.active;
+  const collapsedLogo = collapsed && !isDocked;
   const positioned = !isDocked && position !== null;
   const canSend = input.trim().length > 0 && !loading;
   const dockedWidth = getDockedWidth(viewportSize.width);
@@ -412,25 +428,27 @@ export function ChatPanel() {
 
   const panelWidth = isDocked
     ? dockedWidth
-    : isMobile
-      ? collapsed
-        ? MOBILE_COLLAPSED_WIDTH
-        : MOBILE_EXPANDED_WIDTH
-      : collapsed
-        ? COLLAPSED_WIDTH
+    : collapsedLogo
+      ? COLLAPSED_LOGO_SIZE
+      : isMobile
+        ? MOBILE_EXPANDED_WIDTH
         : PANEL_WIDTH;
   const panelHeight = isDocked
     ? collapsed
-      ? COLLAPSED_HEIGHT
+      ? DOCKED_COLLAPSED_HEIGHT
       : dockedExpandedHeight
-    : isMobile
-      ? collapsed
-        ? COLLAPSED_HEIGHT
-        : mobileExpandedHeight
-      : collapsed
-        ? COLLAPSED_HEIGHT
+    : collapsedLogo
+      ? COLLAPSED_LOGO_SIZE
+      : isMobile
+        ? mobileExpandedHeight
         : PANEL_HEIGHT;
-  const dockedRadius = collapsed ? COLLAPSED_RADIUS : PANEL_RADIUS;
+  const panelRadius = isDocked
+    ? collapsed
+      ? 8
+      : PANEL_RADIUS
+    : collapsedLogo
+      ? 9999
+      : PANEL_RADIUS;
 
   return (
     <motion.div
@@ -439,7 +457,9 @@ export function ChatPanel() {
       className={cn(
         'fixed z-50 flex flex-col overflow-hidden select-none',
         'border border-white/[0.14]',
-        'bg-gradient-to-br from-zinc-800 via-zinc-900 to-slate-950',
+        collapsedLogo
+          ? 'border-cyan-500/35 bg-zinc-900/95'
+          : 'bg-gradient-to-br from-zinc-800 via-zinc-900 to-slate-950',
         !collapsed && game?.canJudge && 'border-cyan-400/50'
       )}
       style={{
@@ -456,11 +476,13 @@ export function ChatPanel() {
         maxWidth: isDocked ? DOCKED_MAX_WIDTH : undefined,
         marginLeft: isDocked ? 'auto' : undefined,
         marginRight: isDocked ? 'auto' : undefined,
-        borderRadius: isDocked ? dockedRadius : collapsed ? COLLAPSED_RADIUS : PANEL_RADIUS,
+        borderRadius: panelRadius,
         transition: isDragging ? 'none' : undefined,
-        boxShadow: game?.canJudge
-          ? '0 24px 56px -16px rgba(0,0,0,0.72), 0 0 0 1px rgba(34,211,238,0.4), 0 0 32px -10px rgba(34,211,238,0.35)'
-          : '0 24px 56px -16px rgba(0,0,0,0.68), 0 0 0 1px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.06)',
+        boxShadow: collapsedLogo
+          ? '0 12px 32px -10px rgba(0,0,0,0.65), 0 0 0 1px rgba(34,211,238,0.28), 0 0 20px -6px rgba(34,211,238,0.35)'
+          : game?.canJudge
+            ? '0 24px 56px -16px rgba(0,0,0,0.72), 0 0 0 1px rgba(34,211,238,0.4), 0 0 32px -10px rgba(34,211,238,0.35)'
+            : '0 24px 56px -16px rgba(0,0,0,0.68), 0 0 0 1px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.06)',
       }}
       initial={{ opacity: 0, scale: 0.94 }}
       animate={{
@@ -476,6 +498,43 @@ export function ChatPanel() {
       }}
     >
       <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
+        {collapsedLogo ? (
+          <div
+            className="relative flex h-full w-full items-center justify-center"
+            style={{
+              cursor: loading ? 'default' : isDragging ? 'grabbing' : 'grab',
+              touchAction: 'none',
+            }}
+            onPointerDown={handleDragStart}
+            title={`${t.judgeName} — ${t.expand}`}
+            role="button"
+            aria-label={t.expandJudge}
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setCollapsed(false);
+                setPosition((p) => (p ? clampPositionForCollapsed(p.x, p.y, false, false) : p));
+              }
+            }}
+          >
+            <div
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-indigo-400/35 bg-gradient-to-br from-indigo-600/45 via-violet-600/35 to-cyan-700/30 shadow-[0_0_14px_rgba(99,102,241,0.38)]"
+              aria-hidden
+            >
+              <FontAwesomeIcon icon={faScaleBalanced} className="h-4 w-4 text-cyan-100" />
+            </div>
+            <span
+              className={cn(
+                'absolute right-1.5 top-1.5 h-2 w-2 rounded-full border border-zinc-900',
+                llmConnected ? 'bg-emerald-400 animate-breathe-dot' : 'bg-zinc-500'
+              )}
+              title={llmConnected ? t.llmConnected : t.llmDisconnected}
+              aria-hidden
+            />
+          </div>
+        ) : (
+          <>
         <div
           className={cn(
             'flex h-10 shrink-0 items-center gap-2 px-2.5',
@@ -528,7 +587,7 @@ export function ChatPanel() {
                 setCollapsed((v) => {
                   const next = !v;
                   if (!isDocked) {
-                    setPosition((p) => (p ? clampPositionForCollapsed(p.x, p.y, next) : p));
+                    setPosition((p) => (p ? clampPositionForCollapsed(p.x, p.y, next, false) : p));
                   }
                   return next;
                 });
@@ -687,6 +746,8 @@ export function ChatPanel() {
             </motion.div>
           )}
         </AnimatePresence>
+          </>
+        )}
       </div>
     </motion.div>
   );

@@ -18,7 +18,6 @@ const TRANSLATIONS = {
   zh: {
     account: '账户信息',
     email: '邮箱',
-    userId: '用户 ID',
     registered: '注册时间',
     lastLogin: '上次登录',
     signOut: '退出登录',
@@ -27,7 +26,6 @@ const TRANSLATIONS = {
   en: {
     account: 'Account',
     email: 'Email',
-    userId: 'User ID',
     registered: 'Registered',
     lastLogin: 'Last sign-in',
     signOut: 'Sign out',
@@ -116,7 +114,6 @@ export function UserMenu({ className = '' }: UserMenuProps) {
   if (!user) return null;
 
   const email = user.email ?? '—';
-  const userId = user.id;
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -168,7 +165,6 @@ export function UserMenu({ className = '' }: UserMenuProps) {
 
             <dl className="mt-3 space-y-2.5">
               <DetailRow label={t.email} value={email} />
-              <DetailRow label={t.userId} value={userId} />
               <DetailRow
                 label={t.registered}
                 value={formatDate(user.created_at, lang)}
